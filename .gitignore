@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code (local agent files & per-project settings)
+.claude/
+CLAUDE.local.md
+
+# local working files
+.video-frames/
+*.log
+.dev-server.log
+*.tmp
+.DS_Store
+
+# local notes / scratch
+CUTOVER.md

@@ -1,26 +1,468 @@
 @import "tailwindcss";
 
+/* ---------- Brand fonts (dashboard) ----------
+   Drop the .woff2 files into /public/fonts/ to activate.
+   Until they exist, the fallback chain takes over silently. */
+@font-face {
+  font-family: "The Seasons";
+  src: url("/fonts/TheSeasons-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "The Seasons";
+  src: url("/fonts/TheSeasons-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "The Seasons";
+  src: url("/fonts/TheSeasons-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Public-site palette — The Indoor Revamp brand colors.
+     #dbc9b5 page BG, #A87E53 accent, #673D29 ink/icons, #3f4e4f CTA/dark. */
+  --bg: #dbc9b5;
+  --card: #dbc9b5;
+  --card-2: #d4c0a8;
+  --card-3: #c9b59c;
+  --ink: #673D29;
+  --ink-dim: #A87E53;
+  --accent: #A87E53;
+  --accent-2: #c19366;
+  --cta: #3f4e4f;
+  --cta-hover: #2f3a3b;
+  --line: rgba(103, 61, 41, 0.18);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Dashboard / brand palette */
+  --dash-bg: #fbf7ee;
+  --dash-surface: #ffffff;
+  --dash-tint: #f1e6d7;
+  --dash-accent: #A87E53;
+  --dash-accent-2: #067D29;
+  --dash-cta: #3f4e4f;
+  --dash-cta-hover: #2f3a3b;
+  --dash-ink: #1f1c19;
+  --dash-ink-dim: #6b5d4e;
+  --dash-line: rgba(168, 126, 83, 0.22);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-card-3: var(--card-3);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-accent: var(--accent);
+  --color-cta: var(--cta);
+  --color-line: var(--line);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-swash: var(--font-swash);
+
+  /* Dashboard tokens */
+  --color-dash-bg: var(--dash-bg);
+  --color-dash-surface: var(--dash-surface);
+  --color-dash-accent: var(--dash-accent);
+  --color-dash-accent-2: var(--dash-accent-2);
+  --color-dash-cta: var(--dash-cta);
+  --color-dash-cta-hover: var(--dash-cta-hover);
+  --color-dash-ink: var(--dash-ink);
+  --color-dash-ink-dim: var(--dash-ink-dim);
+  --color-dash-line: var(--dash-line);
+  --font-heading: "The Seasons", "Playfair Display", Georgia, serif;
+  --font-body: "Acumin Pro", Inter, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------- Dashboard scope (only inside /admin) ---------- */
+.dash {
+  font-family: var(--font-body);
+  color: var(--dash-ink);
+  background: var(--dash-bg);
+  cursor: auto;
 }
 
+.dash h1, .dash h2, .dash h3, .dash h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.005em;
+  color: var(--dash-ink);
+}
+
+/* (cursor restoration moved to the end of file so it can win the cascade) */
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fbf5ec;
+}
+
+@media (pointer: fine) {
+  body { cursor: none; }
+  a, button, [data-cursor] { cursor: none; }
+}
+
+.font-display {
+  font-family: var(--font-display), serif;
+  letter-spacing: -0.012em;
+}
+
+.font-swash {
+  font-family: var(--font-swash), serif;
+}
+
+.card-shell {
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: 0 30px 80px -40px rgba(63, 78, 79, 0.35);
+}
+
+.section-pad {
+  padding: clamp(56px, 8vw, 120px) clamp(20px, 5vw, 80px);
+}
+
+/* ---------- Custom Cursor (motion-driven) ---------- */
+.cursor-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  translate: -50% -50%;
+}
+
+.cursor-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #fbf5ec;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 0 28px rgba(168, 126, 83, 0.35);
+  transition: background 0.3s ease, border 0.3s ease;
+  text-align: center;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.cursor-disc.link {
+  background: rgba(168, 126, 83, 0.18);
+  border: 1px solid var(--accent);
+  box-shadow: none;
+}
+
+.cursor-disc.default {
+  background: var(--accent);
+}
+
+/* ---------- Mask letter reveal ---------- */
+.mask-reveal {
+  display: inline-block;
+  line-height: 0.92;
+}
+
+.char-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  line-height: 0.92;
+}
+
+.char-mask .char {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* ---------- Odometer digits ---------- */
+.odometer {
+  display: inline-flex;
+  align-items: flex-end;
+  vertical-align: bottom;
+  line-height: 0.85;
+}
+
+.digit {
+  display: inline-block;
+  overflow: hidden;
+  height: 1em;
+  line-height: 1;
+  vertical-align: bottom;
+}
+
+.digit-track {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.digit-slot {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+/* ---------- Parallax marquee ---------- */
+.parallax-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
+.parallax-marquee .scroller {
+  display: flex;
+  white-space: nowrap;
+  width: max-content;
+  will-change: transform;
+}
+
+.parallax-marquee .scroller > span {
+  display: inline-block;
+}
+
+/* ---------- Float ---------- */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+.float-anim {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+/* ---------- Buttons ---------- */
+.btn-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--cta);
+  color: #fbf5ec;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+  position: relative;
+  isolation: isolate;
+  transition: background 0.3s ease, box-shadow 0.4s ease;
+  box-shadow: 0 0 0 0 rgba(63, 78, 79, 0);
+}
+
+.btn-circle:hover {
+  background: var(--cta-hover);
+  box-shadow: 0 0 40px rgba(168, 126, 83, 0.45);
+}
+
+.btn-circle::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1px solid rgba(168, 126, 83, 0.45);
+  transform: scale(1);
+  opacity: 0;
+  transition: transform 0.6s var(--ease), opacity 0.4s ease;
+  z-index: -1;
+}
+
+.btn-circle:hover::before {
+  transform: scale(1.18);
+  opacity: 1;
+}
+
+/* ---------- Nav ---------- */
+.nav-link {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.nav-link:hover { opacity: 1; }
+
+.hover-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.hover-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.55s var(--ease);
+}
+
+.hover-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ---------- Placeholder media ---------- */
+.media-ph {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 30% 20%, rgba(168, 126, 83, 0.18), transparent 60%),
+    radial-gradient(100% 100% at 80% 90%, rgba(63, 78, 79, 0.18), transparent 70%),
+    linear-gradient(160deg, var(--card-3) 0%, var(--card-2) 60%, var(--card) 100%);
+  color: var(--ink-dim);
+}
+
+.media-ph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(103, 61, 41, 0.08) 1px, transparent 1px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.media-ph::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(103, 61, 41, 0.5);
+}
+
+.media-ph .ph-chip {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(103, 61, 41, 0.5);
+}
+
+/* ---------- Hero gradient placeholder ---------- */
+.hero-ph {
+  background:
+    radial-gradient(70% 50% at 50% 60%, rgba(168, 126, 83, 0.32), transparent 70%),
+    radial-gradient(40% 30% at 80% 30%, rgba(103, 61, 41, 0.14), transparent 70%),
+    radial-gradient(40% 40% at 20% 30%, rgba(63, 78, 79, 0.1), transparent 70%),
+    linear-gradient(180deg, #e2d2bd 0%, #d4c0a8 55%, #c0a98c 100%);
+  position: relative;
+}
+
+.hero-ph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(103, 61, 41, 0.05) 1px, transparent 1px);
+  background-size: 5px 5px;
+  mix-blend-mode: multiply;
+}
+
+/* ---------- Misc ---------- */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+
+.divider { height: 1px; background: var(--line); width: 100%; }
+
+.marquee-wrap { position: relative; }
+
+/* ---------- Restore native cursors inside the dashboard --------
+   Public site hides the cursor in favor of a custom JS cursor follower.
+   The dashboard does NOT have that, so the cursor needs to come back.
+   Placed last + !important to unambiguously win over the body { cursor: none }
+   rule and the bare a/button cursor: none rule above. */
+@media (pointer: fine) {
+  .dash,
+  .dash * { cursor: auto !important; }
+
+  .dash a,
+  .dash a *,
+  .dash button,
+  .dash button *,
+  .dash select,
+  .dash label,
+  .dash [role="button"],
+  .dash [role="button"] *,
+  .dash .cursor-pointer,
+  .dash .cursor-pointer *,
+  .dash input[type="checkbox"],
+  .dash input[type="radio"],
+  .dash input[type="submit"],
+  .dash input[type="button"] { cursor: pointer !important; }
+
+  .dash input[type="text"],
+  .dash input[type="email"],
+  .dash input[type="password"],
+  .dash input[type="search"],
+  .dash input[type="tel"],
+  .dash input[type="url"],
+  .dash input[type="number"],
+  .dash input:not([type]),
+  .dash textarea { cursor: text !important; }
+
+  .dash [disabled],
+  .dash button[disabled] { cursor: not-allowed !important; }
 }
