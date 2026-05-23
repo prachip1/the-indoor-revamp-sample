@@ -147,6 +147,13 @@ body {
 @media (pointer: fine) {
   body { cursor: none; }
   a, button, [data-cursor] { cursor: none; }
+
+  .cookie-banner,
+  .cookie-banner * { cursor: auto !important; }
+  .cookie-banner a,
+  .cookie-banner button,
+  .cookie-banner label,
+  .cookie-banner input[type="checkbox"] { cursor: pointer !important; }
 }
 
 .font-display {

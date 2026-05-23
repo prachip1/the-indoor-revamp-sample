@@ -64,7 +64,7 @@ export default function CookieConsent() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-md z-[10000] rounded-xl shadow-2xl"
+      className="cookie-banner fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-md z-[10000] rounded-xl shadow-2xl"
       style={{
         background: '#f1e6d7',
         border: '1px solid #A87E53',
