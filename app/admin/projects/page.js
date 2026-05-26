@@ -148,7 +148,7 @@ export default function ProjectsPage() {
                   placeholder="living room, modern, minimal"
                 />
               </Field>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Display Order" hint="Lower numbers appear first.">
                   <Input type="number" name="order" value={form.order} onChange={handleChange} />
                 </Field>

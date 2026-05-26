@@ -159,7 +159,7 @@ export function StatusMessage({ message }) {
 export function SaveBar({ saving, message }) {
   return (
     <div
-      className="sticky bottom-0 -mx-8 px-8 py-4 flex items-center gap-4 border-t"
+      className="sticky bottom-0 -mx-4 px-4 md:-mx-8 md:px-8 py-4 flex flex-wrap items-center gap-4 border-t"
       style={{
         background: 'var(--dash-bg)',
         borderColor: 'var(--dash-line)',

@@ -212,7 +212,7 @@ export default function SeoPage() {
             title="Page details"
             subtitle="The page name and URL are how this entry maps to a real page on your site."
           >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Page Name">
                 <Input
                   name="pageName"
@@ -420,7 +420,7 @@ export default function SeoPage() {
           </Section>
 
           <div
-            className="sticky bottom-0 -mx-8 px-8 py-4 flex items-center gap-3 border-t"
+            className="sticky bottom-0 -mx-4 px-4 md:-mx-8 md:px-8 py-4 flex flex-wrap items-center gap-3 border-t"
             style={{ background: 'var(--dash-bg)', borderColor: 'var(--dash-line)' }}
           >
             <PrimaryButton type="submit" disabled={saving}>
@@ -446,12 +446,14 @@ export default function SeoPage() {
   // ---------- List view ----------
   return (
     <div className="max-w-5xl">
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
         <PageHeader
           title="SEO Settings"
           subtitle="Manage SEO for every page on your website. Click any page to edit its title, description, OG image, structured data, and more."
         />
-        <PrimaryButton onClick={openCreate}>+ Add page</PrimaryButton>
+        <div className="shrink-0">
+          <PrimaryButton onClick={openCreate}>+ Add page</PrimaryButton>
+        </div>
       </div>
 
       <div
@@ -471,7 +473,8 @@ export default function SeoPage() {
             {filtered.length} page{filtered.length === 1 ? '' : 's'}
           </span>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--dash-line)' }}>
               <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--dash-ink-dim)' }}>
@@ -576,6 +579,7 @@ export default function SeoPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="mt-6 text-xs space-y-2" style={{ color: 'var(--dash-ink-dim)' }}>

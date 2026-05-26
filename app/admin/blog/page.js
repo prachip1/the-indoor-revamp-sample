@@ -69,7 +69,8 @@ export default function BlogListPage() {
           className="rounded-xl overflow-hidden mt-6"
           style={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-line)' }}
         >
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--dash-line)' }}>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--dash-ink-dim)' }}>Title</th>
@@ -112,6 +113,7 @@ export default function BlogListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

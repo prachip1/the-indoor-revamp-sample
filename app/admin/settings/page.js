@@ -102,7 +102,7 @@ export default function SettingsPage() {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Logo" hint="Shown in header and emails. PNG with transparent background, ~512×512px recommended.">
               <ImageUpload
                 value={form.logoUrl}
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Contact Email">
               <Input type="email" name="email" value={form.email} onChange={handleChange} placeholder="hello@yourbusiness.com" />
             </Field>
@@ -143,7 +143,7 @@ export default function SettingsPage() {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Region / Country">
               <Input name="region" value={form.region} onChange={handleChange} placeholder="India" />
             </Field>
@@ -218,7 +218,7 @@ export default function SettingsPage() {
               placeholder="re_..."
             />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="From Email" hint="Must be a verified domain in Resend.">
               <Input type="email" name="resendFromEmail" value={form.resendFromEmail} onChange={handleChange} placeholder="hello@yourbusiness.com" />
             </Field>

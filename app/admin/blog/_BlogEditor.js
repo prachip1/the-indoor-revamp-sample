@@ -212,7 +212,7 @@ export default function BlogEditor({ initial = null }) {
         </Section>
 
         <div
-          className="sticky bottom-0 -mx-8 px-8 py-4 flex items-center gap-3 border-t"
+          className="sticky bottom-0 -mx-4 px-4 md:-mx-8 md:px-8 py-4 flex flex-wrap items-center gap-3 border-t"
           style={{ background: 'var(--dash-bg)', borderColor: 'var(--dash-line)' }}
         >
           <PrimaryButton type="button" onClick={() => save()} disabled={saving}>

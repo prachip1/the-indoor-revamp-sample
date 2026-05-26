@@ -107,7 +107,7 @@ export default function RedirectsPage() {
         subtitle={editingId ? 'Update an existing redirect.' : 'A new redirect activates immediately for all visitors.'}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="From (Source URL)" hint="The old path. Start with /">
               <Input
                 name="sourceUrl"
@@ -195,7 +195,8 @@ export default function RedirectsPage() {
             className="rounded-xl overflow-hidden"
             style={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-line)' }}
           >
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--dash-line)' }}>
                   <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--dash-ink-dim)' }}>From</th>
@@ -238,6 +239,7 @@ export default function RedirectsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
