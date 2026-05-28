@@ -185,6 +185,7 @@ body {
   pointer-events: none;
   z-index: 9999;
   translate: -50% -50%;
+  transition: opacity 0.45s var(--ease);
 }
 
 .cursor-disc {
@@ -194,14 +195,14 @@ body {
   border-radius: 999px;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
-  background: var(--accent);
+  background: var(--cta);
   color: #fbf5ec;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  box-shadow: 0 0 28px rgba(168, 126, 83, 0.35);
+  box-shadow: 0 0 14px rgba(63, 78, 79, 0.28);
   transition: background 0.3s ease, border 0.3s ease;
   text-align: center;
   line-height: 1;
@@ -209,13 +210,13 @@ body {
 }
 
 .cursor-disc.link {
-  background: rgba(168, 126, 83, 0.18);
-  border: 1px solid var(--accent);
+  background: var(--cta);
   box-shadow: none;
+  border: none;
 }
 
 .cursor-disc.default {
-  background: var(--accent);
+  background: var(--cta);
 }
 
 /* ---------- Mask letter reveal ---------- */
@@ -426,6 +427,20 @@ body {
   background-image: radial-gradient(rgba(103, 61, 41, 0.05) 1px, transparent 1px);
   background-size: 5px 5px;
   mix-blend-mode: multiply;
+}
+
+/* Soft bleed from hero gradient into the page background so the
+   seam between Hero and About Us disappears. */
+.hero-ph::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  background: linear-gradient(to bottom, transparent 0%, var(--bg) 88%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ---------- Misc ---------- */

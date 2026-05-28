@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   motion,
+  AnimatePresence,
   useScroll,
   useTransform,
   useSpring,
@@ -58,7 +60,10 @@ function Cursor() {
     };
   }, [x, y]);
 
-  const size = state.mode === "label" ? 96 : state.mode === "link" ? 40 : 14;
+  const size = state.mode === "label" ? 96 : state.mode === "link" ? 52 : 14;
+  // Hide the small disc inside the hero spotlight zone — the slate glow
+  // is the cursor there. Outside hero, the disc shows; on link/nav hover
+  // it grows into the solid click-affordance circle (.cursor-disc.link).
   const showDisc = !hidden && !(overSpotlight && state.mode === "default");
   return (
     <motion.div
@@ -353,6 +358,93 @@ function Media({ label, chip, className = "", rounded = "rounded-2xl" }) {
 }
 
 /* ============================================================
+   GLOBAL SPOTLIGHT
+   A fixed, viewport-wide glow that follows the cursor across
+   the whole page. Lives outside the Hero so it isn't clipped at
+   the hero/about seam — instead it morphs from a soft warm halo
+   into a defined circle as you scroll into About Us, then fades
+   out by the time the next section arrives.
+============================================================ */
+function GlobalSpotlight() {
+  const mx = useMotionValue(50);
+  const my = useMotionValue(50);
+  const smx = useSpring(mx, { stiffness: 350, damping: 32, mass: 0.25 });
+  const smy = useSpring(my, { stiffness: 350, damping: 32, mass: 0.25 });
+  const [vh, setVh] = useState(800);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      mx.set((e.clientX / window.innerWidth) * 100);
+      my.set((e.clientY / window.innerHeight) * 100);
+    };
+    const onResize = () => setVh(window.innerHeight);
+    onResize();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [mx, my]);
+
+  const { scrollY } = useScroll();
+  // Anchor the morph to the moment the "About Us" title crosses into
+  // the upper-middle of the viewport. The About section starts at
+  // scrollY ≈ vh (hero is 100svh) and its h2 sits ~80px inside the
+  // section padding, so the title meets a centered cursor at roughly
+  // scrollY ≈ vh * 0.55. By that point the glow is fully a small circle.
+  const progress = useTransform(scrollY, [0, vh * 0.55], [0, 1], {
+    clamp: true,
+  });
+  // Hold the small circle a moment, then fade out before the next
+  // section so it doesn't paint over deeper content.
+  const opacity = useTransform(
+    scrollY,
+    [0, vh * 0.55, vh * 1.05],
+    [1, 1, 0]
+  );
+
+  // Saturated halo at rest → tight, defined circle by the time the
+  // About Us title lines up with the cursor.
+  const sRadius = useTransform(progress, [0, 1], [220, 65]);
+  const sCoreAlpha = useTransform(progress, [0, 1], [0.42, 0.78]);
+  const sCoreStop = useTransform(progress, [0, 1], [0, 82]);
+  const sFadeStop = useTransform(progress, [0, 1], [70, 92]);
+
+  // Same slate color as the "Say Hello" CTA (--cta: #3f4e4f).
+  const spotlight = useMotionTemplate`radial-gradient(${sRadius}px circle at ${smx}% ${smy}%, rgba(63, 78, 79, ${sCoreAlpha}) ${sCoreStop}%, transparent ${sFadeStop}%)`;
+
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 z-[6]"
+      style={{ background: spotlight, opacity }}
+    />
+  );
+}
+
+/* ============================================================
+   Section eyebrow — colored dot + slate brackets on the number
+============================================================ */
+function SectionLabel({ num, children, className = "" }) {
+  return (
+    <p
+      className={`text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)] mb-6 inline-flex items-center gap-3 ${className}`}
+    >
+      <span
+        aria-hidden
+        className="inline-block h-[7px] w-[7px] rounded-full bg-[color:var(--cta)]"
+      />
+      <span>
+        <span className="text-[color:var(--cta)]">[ {num} ]</span>
+        <span className="opacity-60"> — </span>
+        {children}
+      </span>
+    </p>
+  );
+}
+
+/* ============================================================
    Nav
 ============================================================ */
 function Nav() {
@@ -360,10 +452,17 @@ function Nav() {
     <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between section-pad py-6 md:py-7">
       <a
         href="#"
-        className="font-display text-sm tracking-[0.32em] uppercase text-[color:var(--ink)]"
+        aria-label="The Indoor Revamp — home"
+        className="inline-flex items-center"
       >
-        <span className="italic font-light">The </span>
-        <span className="font-medium">Indoor Revamp</span>
+        <Image
+          src="/logo-mark.png"
+          alt="The Indoor Revamp"
+          width={500}
+          height={500}
+          priority
+          className="h-32 w-32 md:h-44 md:w-44 object-contain"
+        />
       </a>
       <div className="hidden md:flex items-center gap-10">
         {[
@@ -382,7 +481,6 @@ function Nav() {
         </a>
         <a
           className="nav-link hover-underline underline underline-offset-4"
-          data-cursor="contact"
           href="#contact"
         >
           Contact Us
@@ -396,40 +494,12 @@ function Nav() {
    HERO
 ============================================================ */
 function Hero() {
-  const heroRef = useRef(null);
-  const mx = useMotionValue(50);
-  const my = useMotionValue(50);
-  const smx = useSpring(mx, { stiffness: 350, damping: 32, mass: 0.25 });
-  const smy = useSpring(my, { stiffness: 350, damping: 32, mass: 0.25 });
-  const [lit, setLit] = useState(false);
-
-  const spotlight = useMotionTemplate`radial-gradient(360px circle at ${smx}% ${smy}%, rgba(168, 126, 83, 0.55), rgba(168, 126, 83, 0.3) 32%, rgba(168, 126, 83, 0.12) 58%, transparent 75%)`;
-
-  const handleMove = (e) => {
-    const el = heroRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    mx.set(((e.clientX - r.left) / r.width) * 100);
-    my.set(((e.clientY - r.top) / r.height) * 100);
-  };
-
   return (
     <section
-      ref={heroRef}
       data-spotlight
-      onMouseMove={handleMove}
-      onMouseEnter={() => setLit(true)}
-      onMouseLeave={() => setLit(false)}
       className="relative h-[100svh] min-h-[680px] w-full overflow-hidden"
     >
       <div className="absolute inset-0 hero-ph" />
-      <motion.div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: spotlight }}
-        transition={{ opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
-        animate={{ opacity: lit ? 1 : 0 }}
-      />
       <Nav />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-8 text-center">
@@ -473,7 +543,7 @@ function Hero() {
           eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </p>
         <div className="md:justify-self-end flex items-end gap-4">
-          <span className="font-display text-2xl italic opacity-80">§</span>
+          <span className="font-display text-2xl italic text-[color:var(--cta)] opacity-90">§</span>
           <p className="max-w-xs md:text-right">
             Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
             nisi ut aliquip ex ea commodo consequat.
@@ -490,9 +560,7 @@ function Hero() {
 function Cozy() {
   return (
     <section id="about" className="relative section-pad">
-      <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)] mb-6">
-        [ 01 ] — About
-      </p>
+      <SectionLabel num="01">About</SectionLabel>
       <h2 className="font-display text-[clamp(54px,10vw,160px)] leading-[0.95] tracking-tight">
         About <span className="font-swash italic font-light">Us</span>
       </h2>
@@ -562,7 +630,7 @@ function Stats() {
             ].map((row, i) => (
               <motion.div
                 key={row.label}
-                className="grid grid-cols-2 gap-6 items-end border-b border-[color:var(--line)] pb-6"
+                className="relative grid grid-cols-2 gap-6 items-end pb-6"
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
@@ -575,9 +643,17 @@ function Stats() {
                 <span className="font-display text-[clamp(72px,12vw,168px)] leading-none">
                   <Odometer value={row.n} />
                 </span>
-                <span className="text-sm tracking-[0.18em] uppercase text-[color:var(--ink-dim)] pb-3">
+                <span className="text-sm tracking-[0.18em] uppercase text-[color:var(--ink-dim)] pb-3 inline-flex items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--cta)]"
+                  />
                   {row.label}
                 </span>
+                <span
+                  aria-hidden
+                  className="absolute left-0 bottom-0 h-px w-full bg-gradient-to-r from-[color:var(--accent)] via-[color:var(--accent-2)]/40 to-transparent"
+                />
               </motion.div>
             ))}
           </div>
@@ -833,9 +909,7 @@ function Services() {
   return (
     <section id="services" className="relative section-pad">
       <div className="flex items-end justify-between gap-8">
-        <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)] mb-6">
-          [ 02 ] — Services
-        </p>
+        <SectionLabel num="02">Services</SectionLabel>
         <h2 className="font-display text-right text-[clamp(56px,11vw,180px)] leading-[0.92] tracking-tight uppercase max-w-[10ch]">
           Our <span className="font-swash italic font-light">Services</span>
         </h2>
@@ -928,9 +1002,7 @@ function FounderNote() {
       id="founder"
       className="relative section-pad min-h-screen flex flex-col justify-center"
     >
-      <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)] mb-6">
-        [ 03 ] — A Note From
-      </p>
+      <SectionLabel num="03">A Note From</SectionLabel>
       <h2 className="font-display text-[clamp(44px,8vw,128px)] leading-[0.95] tracking-tight mb-16">
         The <span className="font-swash italic font-light">Founder</span>
       </h2>
@@ -989,15 +1061,237 @@ function FounderNote() {
 }
 
 /* ============================================================
+   CASE STUDIES  — numbered list; each row opens its case
+============================================================ */
+const CASES = [
+  {
+    n: "01",
+    title: "Lorem Loft",
+    type: "Residential",
+    year: "2024",
+    location: "Lorem, IN",
+    area: "180 m²",
+    summary:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
+    body: [
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation.",
+      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit voluptate velit esse.",
+    ],
+    tags: ["Design Project", "Equipment", "Decoration"],
+  },
+  {
+    n: "02",
+    title: "Dolor Studio",
+    type: "Workspace",
+    year: "2024",
+    location: "Ipsum, IN",
+    area: "120 m²",
+    summary:
+      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.",
+    body: [
+      "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.",
+      "Sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium.",
+    ],
+    tags: ["Design Project", "Decoration"],
+  },
+  {
+    n: "03",
+    title: "Amet Residence",
+    type: "Residential",
+    year: "2023",
+    location: "Dolor, IN",
+    area: "240 m²",
+    summary:
+      "Duis aute irure dolor in reprehenderit voluptate velit esse cillum dolore.",
+    body: [
+      "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
+      "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt.",
+    ],
+    tags: ["Design Project", "Equipment"],
+  },
+];
+
+function CaseRow({ data, index, onOpen }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.8, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      className="group border-t border-[color:var(--line)] last:border-b"
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        data-cursor="open"
+        className="grid w-full grid-cols-[2rem_1fr_auto] md:grid-cols-[3rem_1fr_minmax(0,14rem)_auto] items-center gap-5 md:gap-10 py-7 md:py-9 text-left"
+      >
+        <span className="font-display text-base md:text-xl text-[color:var(--ink-dim)] tabular-nums">
+          {data.n}
+        </span>
+
+        <span className="min-w-0">
+          <h3 className="font-display uppercase tracking-tight leading-[0.95] text-[clamp(24px,4vw,52px)] transition-transform duration-500 group-hover:translate-x-2">
+            {data.title}
+          </h3>
+          <span className="mt-1 block text-xs uppercase tracking-[0.2em] text-[color:var(--ink-dim)]">
+            {data.type} · {data.year}
+          </span>
+        </span>
+
+        <span className="hidden md:block overflow-hidden rounded-xl">
+          <span className="block transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105">
+            <Media label={data.title} className="aspect-[16/10] w-full" />
+          </span>
+        </span>
+
+        <span className="justify-self-end inline-flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-[color:var(--ink)]">
+          <span className="hidden sm:inline hover-underline">View Case</span>
+          <span className="inline-flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full border border-[color:var(--line)] transition-colors duration-300 group-hover:bg-[color:var(--cta)] group-hover:text-[#fbf5ec] group-hover:border-transparent">
+            ↗
+          </span>
+        </span>
+      </button>
+    </motion.div>
+  );
+}
+
+function CaseModal({ data, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[200] flex items-start md:items-center justify-center p-3 md:p-8 bg-[rgba(31,28,25,0.55)] backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={data.title}
+    >
+      <motion.div
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-none rounded-3xl border border-[color:var(--line)] bg-[color:var(--card)]"
+        initial={{ y: 60, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 40, opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          data-cursor="close"
+          aria-label="Close case"
+          className="absolute top-5 right-5 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[color:var(--card)] text-lg text-[color:var(--ink)] transition-colors duration-300 hover:bg-[color:var(--cta)] hover:text-[#fbf5ec] hover:border-transparent"
+        >
+          ✕
+        </button>
+
+        <Media label={data.title} chip={data.n} className="aspect-[16/9] w-full" />
+
+        <div className="p-6 md:p-10">
+          <span className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-dim)]">
+            [ {data.n} ] — Case Study
+          </span>
+          <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.95] text-[clamp(34px,6vw,72px)]">
+            {data.title}
+          </h3>
+
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-5 border-y border-[color:var(--line)] py-5 text-xs uppercase tracking-[0.16em] text-[color:var(--ink-dim)]">
+            {[
+              ["Type", data.type],
+              ["Year", data.year],
+              ["Location", data.location],
+              ["Area", data.area],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <p className="mb-1 opacity-70">{k}</p>
+                <p className="text-[color:var(--ink)] tracking-[0.08em]">{v}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-7 space-y-5 text-sm leading-7 text-[color:var(--ink-dim)] max-w-prose">
+            {data.body.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            {data.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-[color:var(--accent)]/35 bg-[color:var(--accent)]/10 px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-[color:var(--ink)]"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-9 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Media label={`${data.title} — detail`} className="aspect-[4/3]" />
+            <Media label={`${data.title} — detail`} className="aspect-[4/3]" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function CaseStudies() {
+  const [openIndex, setOpenIndex] = useState(null);
+  const active = openIndex !== null ? CASES[openIndex] : null;
+
+  return (
+    <section id="case-studies" className="relative section-pad">
+      <div className="flex items-end justify-between gap-8">
+        <SectionLabel num="04">Selected Work</SectionLabel>
+        <h2 className="font-display text-right text-[clamp(44px,9vw,150px)] leading-[0.92] tracking-tight uppercase max-w-[12ch]">
+          Case <span className="font-swash italic font-light">Studies</span>
+        </h2>
+      </div>
+
+      <div className="mt-16 md:mt-24">
+        {CASES.map((c, i) => (
+          <CaseRow
+            key={c.title}
+            data={c}
+            index={i}
+            onOpen={() => setOpenIndex(i)}
+          />
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {active && (
+          <CaseModal data={active} onClose={() => setOpenIndex(null)} />
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+/* ============================================================
    FOOTER + GET IN TOUCH
 ============================================================ */
 function FooterCTA() {
   return (
     <section id="contact" className="relative pt-20 pb-10 overflow-hidden">
       <div className="section-pad py-20 flex flex-col items-center text-center gap-12">
-        <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)]">
-          [ 04 ] — Contact
-        </p>
+        <SectionLabel num="05">Contact</SectionLabel>
         <h2 className="font-display text-[clamp(64px,12vw,200px)] leading-[0.92] tracking-tight uppercase">
           Get <span className="font-swash italic font-light">In</span> Touch
         </h2>
@@ -1100,6 +1394,7 @@ export default function Home() {
   return (
     <>
       <Cursor />
+      <GlobalSpotlight />
       <main className="relative px-3 md:px-4 pt-3 md:pt-4 pb-4">
         <div className="card-shell relative">
           <Hero />
@@ -1107,6 +1402,7 @@ export default function Home() {
           <Stats />
           <Services />
           <FounderNote />
+          <CaseStudies />
           <FooterCTA />
         </div>
       </main>
