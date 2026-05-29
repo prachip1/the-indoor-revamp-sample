@@ -69,6 +69,15 @@
   --line: rgba(103, 61, 41, 0.18);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* Atmospheric accent palette — muted, interior-design-friendly hues
+     used as background washes and highlight dots so the site reads
+     colorful without leaving the brand temperature. */
+  --clay: #c97b54;     /* terracotta */
+  --sage: #7e8f6e;     /* dried sage */
+  --blush: #d8a89a;    /* dusty rose */
+  --sky: #6b8794;      /* faded denim */
+  --mustard: #c89a4d;  /* warm ochre */
+
   /* Dashboard / brand palette */
   --dash-bg: #fbf7ee;
   --dash-surface: #ffffff;
@@ -148,6 +157,11 @@ body {
   body { cursor: none; }
   a, button, [data-cursor] { cursor: none; }
 
+  /* Opt-out: caption-style CTAs that suppress the custom disc — show
+     the native pointer instead so the element still feels clickable. */
+  [data-cursor="none"],
+  [data-cursor="none"] * { cursor: pointer !important; }
+
   .cookie-banner,
   .cookie-banner * { cursor: auto !important; }
   .cookie-banner a,
@@ -202,8 +216,14 @@ body {
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  box-shadow: 0 0 14px rgba(63, 78, 79, 0.28);
-  transition: background 0.3s ease, border 0.3s ease;
+  /* Layered halo — warm tan inner glow on top of a soft slate ring so
+     the cursor feels lit, not just printed. */
+  box-shadow:
+    0 0 0 1px rgba(251, 245, 236, 0.18),
+    0 0 12px rgba(168, 126, 83, 0.55),
+    0 0 28px rgba(168, 126, 83, 0.3),
+    0 0 18px rgba(63, 78, 79, 0.35);
+  transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
   text-align: center;
   line-height: 1;
   overflow: hidden;
@@ -217,6 +237,14 @@ body {
 
 .cursor-disc.default {
   background: var(--cta);
+}
+
+/* "Say Hello" CTA: cursor disc takes on the warm brown accent so it
+   visually mixes with the slate button instead of disappearing into it. */
+.cursor-disc.label[data-cursor-label="say hello"] {
+  background: var(--accent);
+  color: #fbf5ec;
+  box-shadow: 0 0 24px rgba(168, 126, 83, 0.55);
 }
 
 /* ---------- Mask letter reveal ---------- */
@@ -400,7 +428,7 @@ body {
   color: rgba(103, 61, 41, 0.5);
 }
 
-.media-ph .ph-chip {
+.ph-chip {
   position: absolute;
   top: 14px;
   right: 16px;
@@ -408,6 +436,17 @@ body {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(103, 61, 41, 0.5);
+  z-index: 2;
+}
+
+/* When the chip sits over a real photo, dark text becomes unreadable —
+   switch to a cream-on-translucent pill so it stays legible. */
+.media-image .ph-chip {
+  color: #fbf5ec;
+  background: rgba(31, 28, 25, 0.45);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  backdrop-filter: blur(6px);
 }
 
 /* ---------- Hero gradient placeholder ---------- */
@@ -441,6 +480,82 @@ body {
   background: linear-gradient(to bottom, transparent 0%, var(--bg) 88%);
   pointer-events: none;
   z-index: 1;
+}
+
+/* ---------- Atmospheric color orbs ----------
+   Soft floating gradient circles that sit behind a section to lift
+   it out of the flat beige. Always pointer-events: none and behind
+   content (z = 0). Tints stay desaturated so the warm temperature
+   of the page is preserved. */
+.aura {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.55;
+  z-index: 0;
+  mix-blend-mode: multiply;
+  animation: auraDrift 18s ease-in-out infinite;
+}
+
+/* Drop the animation — heavy blurred boxes paint expensively when
+   animated. Use this on hero-heavy areas like the footer. */
+.aura.still { animation: none; }
+
+/* Variant for dark backgrounds: screen blend so the colored glow
+   shows through instead of being multiplied into oblivion. */
+.aura.on-dark {
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  filter: blur(70px);
+}
+
+.aura.clay   { background: radial-gradient(closest-side, rgba(201,123,84,0.55), transparent 70%); }
+.aura.sage   { background: radial-gradient(closest-side, rgba(126,143,110,0.5), transparent 70%); }
+.aura.blush  { background: radial-gradient(closest-side, rgba(216,168,154,0.55), transparent 70%); }
+.aura.sky    { background: radial-gradient(closest-side, rgba(107,135,148,0.5), transparent 70%); }
+.aura.mustard{ background: radial-gradient(closest-side, rgba(200,154,77,0.5), transparent 70%); }
+.aura.slate  { background: radial-gradient(closest-side, rgba(63,78,79,0.4), transparent 70%); }
+
+@keyframes auraDrift {
+  0%,100% { transform: translate3d(0,0,0) scale(1); }
+  50%     { transform: translate3d(20px,-26px,0) scale(1.08); }
+}
+
+/* Gradient-filled display text — use sparingly on big numbers/titles
+   so they pick up the accent palette without overpowering the page. */
+.text-gradient-warm {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--clay) 55%, var(--mustard) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-cool {
+  background: linear-gradient(135deg, var(--cta) 0%, var(--sky) 55%, var(--sage) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Colored chip — bordered pill that takes a CSS-var hue. Usage:
+   <span class="chip-tone" style="--tone: var(--sage)">Eco</span> */
+.chip-tone {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tone, var(--accent));
+  background: color-mix(in srgb, var(--tone, var(--accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone, var(--accent)) 45%, transparent);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.chip-tone:hover {
+  background: color-mix(in srgb, var(--tone, var(--accent)) 22%, transparent);
 }
 
 /* ---------- Misc ---------- */

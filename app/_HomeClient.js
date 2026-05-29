@@ -2,6 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Nav from "./_components/Nav";
+import Cursor from "./_components/Cursor";
+import Media from "./_components/Media";
 import {
   motion,
   AnimatePresence,
@@ -16,80 +19,6 @@ import {
   animate,
   wrap,
 } from "motion/react";
-
-/* ============================================================
-   Custom cursor (spring-driven)
-============================================================ */
-function Cursor() {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 500, damping: 50, mass: 0.6 });
-  const sy = useSpring(y, { stiffness: 500, damping: 50, mass: 0.6 });
-  const [state, setState] = useState({ mode: "default", label: "" });
-  const [hidden, setHidden] = useState(false);
-
-  const [overSpotlight, setOverSpotlight] = useState(false);
-  useEffect(() => {
-    const onMove = (e) => {
-      x.set(e.clientX);
-      y.set(e.clientY);
-      const spotlightZone = e.target.closest("[data-spotlight]");
-      setOverSpotlight(!!spotlightZone);
-      const t = e.target.closest("[data-cursor]");
-      const linkish = e.target.closest("a, button");
-      if (t) {
-        const label = t.getAttribute("data-cursor");
-        if (label) setState({ mode: "label", label });
-        else if (linkish) setState({ mode: "link", label: "" });
-        else setState({ mode: "default", label: "" });
-      } else if (linkish) {
-        setState({ mode: "link", label: "" });
-      } else {
-        setState({ mode: "default", label: "" });
-      }
-    };
-    const onLeave = () => setHidden(true);
-    const onEnter = () => setHidden(false);
-    window.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseleave", onLeave);
-    document.addEventListener("mouseenter", onEnter);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseleave", onLeave);
-      document.removeEventListener("mouseenter", onEnter);
-    };
-  }, [x, y]);
-
-  const size = state.mode === "label" ? 96 : state.mode === "link" ? 52 : 14;
-  // Hide the small disc inside the hero spotlight zone — the slate glow
-  // is the cursor there. Outside hero, the disc shows; on link/nav hover
-  // it grows into the solid click-affordance circle (.cursor-disc.link).
-  const showDisc = !hidden && !(overSpotlight && state.mode === "default");
-  return (
-    <motion.div
-      style={{ x: sx, y: sy, opacity: showDisc ? 1 : 0 }}
-      className="cursor-follower"
-    >
-      <motion.div
-        animate={{ width: size, height: size }}
-        transition={{ type: "spring", stiffness: 250, damping: 24 }}
-        className={`cursor-disc ${state.mode}`}
-      >
-        <motion.span
-          key={state.label}
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{
-            opacity: state.mode === "label" ? 1 : 0,
-            scale: state.mode === "label" ? 1 : 0.6,
-          }}
-          transition={{ duration: 0.25 }}
-        >
-          {state.label}
-        </motion.span>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 /* ============================================================
    Magnetic wrapper
@@ -220,6 +149,56 @@ function MaskRevealMixed({ parts, className = "", delay = 0, stagger = 0.045, on
 }
 
 /* ============================================================
+   Scroll-linked word reveal — each word brightens in turn as the
+   container passes through the viewport, giving a smooth typewriter-
+   style highlight wave. Word ranges overlap so the handover between
+   neighboring words feels continuous, not stepped.
+============================================================ */
+function RevealWord({ text, start, end, progress }) {
+  const opacity = useTransform(progress, [start, end], [0.18, 1]);
+  return <motion.span style={{ opacity }}>{text}</motion.span>;
+}
+
+function ScrollWordReveal({ children, className = "" }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    // Start the wave the moment the block enters the viewport from
+    // below, and finish only once it has scrolled most of the way up.
+    // Wide range = slow, deliberate typewriter feel.
+    offset: ["start 0.95", "end 0.15"],
+  });
+
+  // Preserve whitespace so layout is identical to a plain text node.
+  const tokens = String(children).split(/(\s+)/).filter(Boolean);
+  const wordCount = tokens.filter((t) => /\S/.test(t)).length || 1;
+  let wordIdx = -1;
+
+  return (
+    <span ref={ref} className={className}>
+      {tokens.map((tok, i) => {
+        if (/^\s+$/.test(tok)) return <span key={i}>{tok}</span>;
+        wordIdx++;
+        const step = 1 / wordCount;
+        // Each word's brightening overlaps slightly with its neighbors
+        // (±30% of a step) so adjacent words fade together.
+        const startP = Math.max(0, wordIdx * step - step * 0.3);
+        const endP = Math.min(1, (wordIdx + 1) * step + step * 0.3);
+        return (
+          <RevealWord
+            key={i}
+            text={tok}
+            start={startP}
+            end={endP}
+            progress={scrollYProgress}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
+/* ============================================================
    Odometer-style rolling digit
 ============================================================ */
 function Digit({ value }) {
@@ -343,21 +322,6 @@ function ParallaxMarquee({ children, baseVelocity = 60 }) {
 }
 
 /* ============================================================
-   Placeholder media block
-============================================================ */
-function Media({ label, chip, className = "", rounded = "rounded-2xl" }) {
-  return (
-    <div
-      className={`media-ph ${rounded} ${className}`}
-      data-label={label || "placeholder"}
-      data-cursor="view"
-    >
-      {chip ? <span className="ph-chip">{chip}</span> : null}
-    </div>
-  );
-}
-
-/* ============================================================
    GLOBAL SPOTLIGHT
    A fixed, viewport-wide glow that follows the cursor across
    the whole page. Lives outside the Hero so it isn't clipped at
@@ -424,69 +388,27 @@ function GlobalSpotlight() {
 }
 
 /* ============================================================
-   Section eyebrow — colored dot + slate brackets on the number
+   Section eyebrow — colored dot + slate brackets on the number.
+   `tone` accepts any CSS var name (e.g. "--clay") so each section
+   can pick a different highlight color.
 ============================================================ */
-function SectionLabel({ num, children, className = "" }) {
+function SectionLabel({ num, children, className = "", tone = "--cta" }) {
+  const color = `var(${tone})`;
   return (
     <p
       className={`text-xs uppercase tracking-[0.32em] text-[color:var(--ink-dim)] mb-6 inline-flex items-center gap-3 ${className}`}
     >
       <span
         aria-hidden
-        className="inline-block h-[7px] w-[7px] rounded-full bg-[color:var(--cta)]"
+        className="inline-block h-[7px] w-[7px] rounded-full"
+        style={{ background: color, boxShadow: `0 0 14px ${color}` }}
       />
       <span>
-        <span className="text-[color:var(--cta)]">[ {num} ]</span>
+        <span style={{ color }}>[ {num} ]</span>
         <span className="opacity-60"> — </span>
         {children}
       </span>
     </p>
-  );
-}
-
-/* ============================================================
-   Nav
-============================================================ */
-function Nav() {
-  return (
-    <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between section-pad py-6 md:py-7">
-      <a
-        href="#"
-        aria-label="The Indoor Revamp — home"
-        className="inline-flex items-center"
-      >
-        <Image
-          src="/logo-mark.png"
-          alt="The Indoor Revamp"
-          width={500}
-          height={500}
-          priority
-          className="h-32 w-32 md:h-44 md:w-44 object-contain"
-        />
-      </a>
-      <div className="hidden md:flex items-center gap-10">
-        {[
-          { l: "About", h: "#about" },
-          { l: "Services", h: "#services" },
-          { l: "FAQ", h: "#faq" },
-        ].map((x) => (
-          <a key={x.l} className="nav-link hover-underline" href={x.h}>
-            {x.l}
-          </a>
-        ))}
-      </div>
-      <div className="hidden md:flex items-center gap-10">
-        <a className="nav-link hover-underline" href="#cases">
-          Cases
-        </a>
-        <a
-          className="nav-link hover-underline underline underline-offset-4"
-          href="#contact"
-        >
-          Contact Us
-        </a>
-      </div>
-    </nav>
   );
 }
 
@@ -559,8 +481,11 @@ function Hero() {
 ============================================================ */
 function Cozy() {
   return (
-    <section id="about" className="relative section-pad">
-      <SectionLabel num="01">About</SectionLabel>
+    <section id="about" className="relative section-pad overflow-hidden">
+      <span aria-hidden className="aura clay" style={{ width: 520, height: 520, top: "-120px", right: "-160px" }} />
+      <span aria-hidden className="aura sage" style={{ width: 380, height: 380, bottom: "-100px", left: "-120px", animationDelay: "-6s" }} />
+      <div className="relative">
+      <SectionLabel num="01" tone="--clay">About</SectionLabel>
       <h2 className="font-display text-[clamp(54px,10vw,160px)] leading-[0.95] tracking-tight">
         About <span className="font-swash italic font-light">Us</span>
       </h2>
@@ -610,6 +535,7 @@ function Cozy() {
           />
         </motion.div>
       </div>
+      </div>
     </section>
   );
 }
@@ -618,16 +544,19 @@ function Cozy() {
    STATS
 ============================================================ */
 function Stats() {
+  const rows = [
+    { n: 5, label: "Lorem", tone: "--clay", gradient: "text-gradient-warm" },
+    { n: 12, label: "Ipsum", tone: "--sky", gradient: "text-gradient-cool" },
+    { n: 187, label: "Dolor", tone: "--mustard", gradient: "text-gradient-warm" },
+  ];
   return (
-    <section className="relative section-pad pt-0">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
+    <section className="relative section-pad pt-0 overflow-hidden">
+      <span aria-hidden className="aura sky" style={{ width: 460, height: 460, top: "10%", right: "-160px", animationDelay: "-3s" }} />
+      <span aria-hidden className="aura mustard" style={{ width: 320, height: 320, bottom: "-80px", left: "30%", animationDelay: "-9s" }} />
+      <div className="relative grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
         <div className="md:col-span-7">
           <div className="space-y-12">
-            {[
-              { n: 5, label: "Lorem" },
-              { n: 12, label: "Ipsum" },
-              { n: 187, label: "Dolor" },
-            ].map((row, i) => (
+            {rows.map((row, i) => (
               <motion.div
                 key={row.label}
                 className="relative grid grid-cols-2 gap-6 items-end pb-6"
@@ -640,19 +569,23 @@ function Stats() {
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
-                <span className="font-display text-[clamp(72px,12vw,168px)] leading-none">
+                <span className={`font-display text-[clamp(72px,12vw,168px)] leading-none ${row.gradient}`}>
                   <Odometer value={row.n} />
                 </span>
                 <span className="text-sm tracking-[0.18em] uppercase text-[color:var(--ink-dim)] pb-3 inline-flex items-center gap-3">
                   <span
                     aria-hidden
-                    className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--cta)]"
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: `var(${row.tone})`, boxShadow: `0 0 10px var(${row.tone})` }}
                   />
                   {row.label}
                 </span>
                 <span
                   aria-hidden
-                  className="absolute left-0 bottom-0 h-px w-full bg-gradient-to-r from-[color:var(--accent)] via-[color:var(--accent-2)]/40 to-transparent"
+                  className="absolute left-0 bottom-0 h-px w-full"
+                  style={{
+                    background: `linear-gradient(to right, var(${row.tone}), color-mix(in srgb, var(${row.tone}) 30%, transparent) 60%, transparent)`,
+                  }}
                 />
               </motion.div>
             ))}
@@ -887,35 +820,49 @@ function Services() {
   const rows = [
     {
       n: "01",
-      title: "Lorem Ipsum",
+      title: "Lorem",
       desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      cta: "Know More",
+      href: "#service-01",
+      tone: "--clay",
     },
     {
       n: "02",
-      title: "Dolor Sit",
+      title: "Dolor",
       desc: "Ut enim ad minim veniam, quis nostrud exercitation.",
+      cta: "Know More",
+      href: "#service-02",
+      tone: "--sage",
     },
     {
       n: "03",
-      title: "Consectetur",
+      title: "Sit",
       desc: "Duis aute irure dolor in reprehenderit voluptate.",
+      cta: "Know More",
+      href: "#service-03",
+      tone: "--sky",
     },
     {
       n: "04",
-      title: "Adipiscing",
+      title: "Amet",
       desc: "Excepteur sint occaecat cupidatat non proident sunt.",
+      cta: "Know More",
+      href: "#service-04",
+      tone: "--mustard",
     },
   ];
   return (
-    <section id="services" className="relative section-pad">
-      <div className="flex items-end justify-between gap-8">
-        <SectionLabel num="02">Services</SectionLabel>
+    <section id="services" className="relative section-pad overflow-hidden">
+      <span aria-hidden className="aura sage" style={{ width: 520, height: 520, top: "8%", left: "-180px" }} />
+      <span aria-hidden className="aura blush" style={{ width: 380, height: 380, bottom: "20%", right: "-120px", animationDelay: "-7s" }} />
+      <div className="relative flex items-end justify-between gap-8">
+        <SectionLabel num="02" tone="--sage">Services</SectionLabel>
         <h2 className="font-display text-right text-[clamp(56px,11vw,180px)] leading-[0.92] tracking-tight uppercase max-w-[10ch]">
           Our <span className="font-swash italic font-light">Services</span>
         </h2>
       </div>
 
-      <div className="mt-24 space-y-24 md:space-y-40">
+      <div className="relative mt-24 space-y-24 md:space-y-40">
         {rows.map((r, i) => (
           <ServiceRow key={r.n} {...r} imageRight={i % 2 === 0} />
         ))}
@@ -924,7 +871,7 @@ function Services() {
   );
 }
 
-function ServiceRow({ n, title, desc, imageRight }) {
+function ServiceRow({ n, title, desc, cta, href, imageRight, tone = "--cta" }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -935,9 +882,9 @@ function ServiceRow({ n, title, desc, imageRight }) {
     damping: 28,
     mass: 0.5,
   });
-  const imageScale = useTransform(sp, [0, 0.5, 1], [1.2, 1, 0.72]);
+  const imageScale = useTransform(sp, [0, 0.5, 1], [1.15, 1, 0.78]);
   const imageOpacity = useTransform(sp, [0, 0.15, 0.85, 1], [0.6, 1, 1, 0.6]);
-  const textScale = useTransform(sp, [0, 0.5, 1], [0.72, 1, 1.18]);
+  const textScale = useTransform(sp, [0, 0.5, 1], [0.78, 1, 1.12]);
   const textY = useTransform(sp, [0, 1], ["8%", "-8%"]);
 
   const textOrigin = imageRight ? "left center" : "right center";
@@ -948,34 +895,42 @@ function ServiceRow({ n, title, desc, imageRight }) {
       ref={ref}
       className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center min-h-[70vh]"
     >
+      {/* Image — 7/12 columns, slightly landscape, no width cap so it
+          takes the full column width. */}
       <motion.div
         style={{
           scale: imageScale,
           opacity: imageOpacity,
           transformOrigin: imageOrigin,
         }}
-        className={`md:col-span-6 ${
+        className={`md:col-span-7 ${
           imageRight ? "md:order-2 md:justify-self-end" : "md:order-1 md:justify-self-start"
         } w-full`}
       >
         <Media
           label={title}
           chip={n}
-          className="aspect-[4/5] w-full max-w-[520px]"
+          image="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1600&q=80&auto=format&fit=crop"
+          className="aspect-[5/4] w-full"
+          expandable
         />
       </motion.div>
 
+      {/* Text — 5/12 columns. CTA sits below the description. */}
       <motion.div
         style={{
           scale: textScale,
           y: textY,
           transformOrigin: textOrigin,
         }}
-        className={`md:col-span-6 ${
+        className={`md:col-span-5 ${
           imageRight ? "md:order-1 text-left" : "md:order-2 text-right md:justify-self-end"
         }`}
       >
-        <span className="block text-xs uppercase tracking-[0.28em] text-[color:var(--ink-dim)] tabular-nums">
+        <span
+          className="block text-xs uppercase tracking-[0.28em] tabular-nums"
+          style={{ color: `var(${tone})` }}
+        >
           [ {n} ]
         </span>
         <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.95] text-[clamp(40px,7.5vw,112px)]">
@@ -988,6 +943,20 @@ function ServiceRow({ n, title, desc, imageRight }) {
         >
           {desc}
         </p>
+        <div className={`mt-8 flex ${imageRight ? "justify-start" : "justify-end"}`}>
+          {/* Caption-style CTA. data-cursor="none" suppresses the big
+              link-mode circle on hover; the text gets the slate color
+              shift + underline as its hover affordance instead. */}
+          <a
+            href={href}
+            data-cursor="none"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] transition-colors duration-300 hover-underline"
+            style={{ color: `var(${tone})` }}
+          >
+            {cta}
+            <span aria-hidden>↗</span>
+          </a>
+        </div>
       </motion.div>
     </div>
   );
@@ -1000,11 +969,14 @@ function FounderNote() {
   return (
     <section
       id="founder"
-      className="relative section-pad min-h-screen flex flex-col justify-center"
+      className="relative section-pad min-h-screen flex flex-col justify-center overflow-hidden"
     >
-      <SectionLabel num="03">A Note From</SectionLabel>
+      <span aria-hidden className="aura blush" style={{ width: 560, height: 560, top: "-100px", right: "-180px", animationDelay: "-2s" }} />
+      <span aria-hidden className="aura sky" style={{ width: 360, height: 360, bottom: "-80px", left: "10%", animationDelay: "-11s" }} />
+      <div className="relative">
+      <SectionLabel num="03" tone="--blush">A Note From</SectionLabel>
       <h2 className="font-display text-[clamp(44px,8vw,128px)] leading-[0.95] tracking-tight mb-16">
-        The <span className="font-swash italic font-light">Founder</span>
+        The <span className="font-swash italic font-light text-gradient-warm">Founder</span>
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center">
@@ -1020,6 +992,7 @@ function FounderNote() {
           <Media
             label="Founder portrait"
             chip="Founder"
+            image="https://images.unsplash.com/photo-1605884636476-ec4bd6c8d958?w=1200&q=80&auto=format&fit=crop"
             className="aspect-[4/5] w-full max-w-[560px]"
           />
           <span className="font-swash italic font-light text-3xl md:text-5xl mt-8 text-[color:var(--ink)]">
@@ -1043,18 +1016,29 @@ function FounderNote() {
           }}
           style={{ transformOrigin: "left center" }}
         >
-          <blockquote className="font-display text-[clamp(22px,2.6vw,40px)] leading-[1.35] italic text-[color:var(--ink)]">
+          <blockquote className="relative font-display text-[clamp(22px,2.6vw,40px)] leading-[1.45] italic text-[color:var(--ink)] pl-8 md:pl-12">
+            {/* Opening quote is absolutely positioned so its big font
+                size doesn't stretch the first body line. */}
             <span
               aria-hidden
-              className="font-swash italic font-light text-[clamp(46px,6vw,90px)] leading-none text-[color:var(--accent)] opacity-70 align-top mr-2"
+              className="absolute left-0 -top-3 md:-top-6 font-swash italic font-light text-[clamp(46px,6vw,90px)] leading-none text-[color:var(--accent)] opacity-70 select-none pointer-events-none"
             >
               “
             </span>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua, ut
-            enim ad minim veniam quis nostrud exercitation.
+            <ScrollWordReveal>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation.
+            </ScrollWordReveal>
+            {/* Closing quote inline, scaled relative to body text so the
+                final line stays the same height as the rest. */}
+            <span
+              aria-hidden
+              className="font-swash italic font-light text-[1.6em] leading-none text-[color:var(--accent)] opacity-70 select-none ml-1 align-middle"
+            >
+              ”
+            </span>
           </blockquote>
         </motion.div>
+      </div>
       </div>
     </section>
   );
@@ -1063,7 +1047,7 @@ function FounderNote() {
 /* ============================================================
    CASE STUDIES  — numbered list; each row opens its case
 ============================================================ */
-const CASES = [
+export const CASES = [
   {
     n: "01",
     title: "Lorem Loft",
@@ -1071,6 +1055,8 @@ const CASES = [
     year: "2024",
     location: "Lorem, IN",
     area: "180 m²",
+    image:
+      "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1600&q=80&auto=format&fit=crop",
     summary:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
     body: [
@@ -1086,6 +1072,8 @@ const CASES = [
     year: "2024",
     location: "Ipsum, IN",
     area: "120 m²",
+    image:
+      "https://images.unsplash.com/photo-1512972972907-6d71529c5e92?w=1600&q=80&auto=format&fit=crop",
     summary:
       "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.",
     body: [
@@ -1101,6 +1089,8 @@ const CASES = [
     year: "2023",
     location: "Dolor, IN",
     area: "240 m²",
+    image:
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1600&q=80&auto=format&fit=crop",
     summary:
       "Duis aute irure dolor in reprehenderit voluptate velit esse cillum dolore.",
     body: [
@@ -1109,16 +1099,34 @@ const CASES = [
     ],
     tags: ["Design Project", "Equipment"],
   },
+  {
+    n: "04",
+    title: "Consectetur Bistro",
+    type: "Hospitality",
+    year: "2023",
+    location: "Amet, IN",
+    area: "95 m²",
+    image:
+      "https://images.unsplash.com/photo-1593696140826-c58b021acf8b?w=1600&q=80&auto=format&fit=crop",
+    summary:
+      "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim.",
+    body: [
+      "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus.",
+      "Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
+    ],
+    tags: ["Hospitality", "Design Project"],
+  },
 ];
 
-function CaseRow({ data, index, onOpen }) {
+function CaseRow({ data, index, tone = "--cta", onOpen }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
       transition={{ duration: 0.8, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      className="group border-t border-[color:var(--line)] last:border-b"
+      className="group border-t border-[color:var(--line)] transition-colors duration-500"
+      style={{ ["--row-tone"]: `var(${tone})` }}
     >
       <button
         type="button"
@@ -1126,7 +1134,10 @@ function CaseRow({ data, index, onOpen }) {
         data-cursor="open"
         className="grid w-full grid-cols-[2rem_1fr_auto] md:grid-cols-[3rem_1fr_minmax(0,14rem)_auto] items-center gap-5 md:gap-10 py-7 md:py-9 text-left"
       >
-        <span className="font-display text-base md:text-xl text-[color:var(--ink-dim)] tabular-nums">
+        <span
+          className="font-display text-base md:text-xl tabular-nums transition-colors duration-300"
+          style={{ color: `var(${tone})` }}
+        >
           {data.n}
         </span>
 
@@ -1141,7 +1152,11 @@ function CaseRow({ data, index, onOpen }) {
 
         <span className="hidden md:block overflow-hidden rounded-xl">
           <span className="block transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105">
-            <Media label={data.title} className="aspect-[16/10] w-full" />
+            <Media
+              label={data.title}
+              image={data.image}
+              className="aspect-[16/10] w-full"
+            />
           </span>
         </span>
 
@@ -1200,7 +1215,12 @@ function CaseModal({ data, onClose }) {
           ✕
         </button>
 
-        <Media label={data.title} chip={data.n} className="aspect-[16/9] w-full" />
+        <Media
+          label={data.title}
+          chip={data.n}
+          image={data.image}
+          className="aspect-[16/9] w-full"
+        />
 
         <div className="p-6 md:p-10">
           <span className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-dim)]">
@@ -1231,10 +1251,11 @@ function CaseModal({ data, onClose }) {
           </div>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            {data.tags.map((t) => (
+            {data.tags.map((t, i) => (
               <span
                 key={t}
-                className="rounded-full border border-[color:var(--accent)]/35 bg-[color:var(--accent)]/10 px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-[color:var(--ink)]"
+                className="chip-tone"
+                style={{ ["--tone"]: `var(${CASE_TONES[i % CASE_TONES.length]})` }}
               >
                 {t}
               </span>
@@ -1251,25 +1272,30 @@ function CaseModal({ data, onClose }) {
   );
 }
 
+const CASE_TONES = ["--clay", "--sage", "--sky", "--mustard", "--blush"];
+
 function CaseStudies() {
   const [openIndex, setOpenIndex] = useState(null);
   const active = openIndex !== null ? CASES[openIndex] : null;
 
   return (
-    <section id="case-studies" className="relative section-pad">
-      <div className="flex items-end justify-between gap-8">
-        <SectionLabel num="04">Selected Work</SectionLabel>
+    <section id="case-studies" className="relative section-pad overflow-hidden">
+      <span aria-hidden className="aura mustard" style={{ width: 480, height: 480, top: "5%", right: "-160px" }} />
+      <span aria-hidden className="aura clay" style={{ width: 360, height: 360, bottom: "10%", left: "-100px", animationDelay: "-8s" }} />
+      <div className="relative flex items-end justify-between gap-8">
+        <SectionLabel num="04" tone="--mustard">Selected Work</SectionLabel>
         <h2 className="font-display text-right text-[clamp(44px,9vw,150px)] leading-[0.92] tracking-tight uppercase max-w-[12ch]">
-          Case <span className="font-swash italic font-light">Studies</span>
+          Case <span className="font-swash italic font-light text-gradient-warm">Studies</span>
         </h2>
       </div>
 
-      <div className="mt-16 md:mt-24">
+      <div className="relative mt-16 md:mt-24">
         {CASES.map((c, i) => (
           <CaseRow
             key={c.title}
             data={c}
             index={i}
+            tone={CASE_TONES[i % CASE_TONES.length]}
             onOpen={() => setOpenIndex(i)}
           />
         ))}
@@ -1288,12 +1314,47 @@ function CaseStudies() {
    FOOTER + GET IN TOUCH
 ============================================================ */
 function FooterCTA() {
+  const socials = [
+    { l: "Instagram", h: "#", tone: "--clay" },
+    { l: "Pinterest", h: "#", tone: "--sage" },
+    { l: "LinkedIn", h: "#", tone: "--sky" },
+    { l: "Houzz", h: "#", tone: "--mustard" },
+  ];
+  const cream = "#efe1c9";
+  const creamDim = "rgba(239,225,201,0.6)";
+  const lineDark = "rgba(239,225,201,0.14)";
   return (
-    <section id="contact" className="relative pt-20 pb-10 overflow-hidden">
-      <div className="section-pad py-20 flex flex-col items-center text-center gap-12">
-        <SectionLabel num="05">Contact</SectionLabel>
+    <section
+      id="contact"
+      className="relative -mt-32 md:-mt-48 overflow-hidden"
+      style={{ background: "#2a1a0e" }}
+    >
+      {/* ── BEIGE COVER ──────────────────────────────────────────────
+         The whole section sits on solid cocoa. This single overlay
+         covers the upper portion with the exact page beige and fades
+         to transparent at its lower edge, so the cocoa shows through
+         continuously beneath. There is no separate "transition strip"
+         and no rectangular ends to perceive as a line — the only edge
+         is transparent, which is invisible. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] md:h-[1300px]"
+        style={{
+          background:
+            "linear-gradient(in oklch to bottom, #dbc9b5 0%, #dbc9b5 52%, transparent 100%)",
+        }}
+      />
+
+      {/* ── 1. CONTACT CTA — sits on the beige top portion ────────── */}
+      <span
+        aria-hidden
+        className="aura still clay"
+        style={{ width: 520, height: 520, top: "180px", left: "50%", transform: "translateX(-50%)" }}
+      />
+      <div className="relative section-pad pt-44 md:pt-64 pb-32 flex flex-col items-center text-center gap-12">
+        <SectionLabel num="05" tone="--clay">Contact</SectionLabel>
         <h2 className="font-display text-[clamp(64px,12vw,200px)] leading-[0.92] tracking-tight uppercase">
-          Get <span className="font-swash italic font-light">In</span> Touch
+          Get <span className="font-swash italic font-light text-gradient-warm">In</span> Touch
         </h2>
         <p className="max-w-md text-sm leading-7 text-[color:var(--ink-dim)]">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
@@ -1315,73 +1376,213 @@ function FooterCTA() {
         </Magnetic>
       </div>
 
-      <div className="section-pad pt-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-sm">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] mb-3">
-              Phone
-            </p>
-            <p className="mb-6">+0 000 00 00 000</p>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] mb-3">
-              E-mail
-            </p>
-            <p>lorem@ipsum.com</p>
-          </div>
+      {/* ── 2. DARK FOOTER — accent colors pop against the cocoa
+            already painted by the section bg. ────────────────────── */}
+      <div className="relative" style={{ color: cream }}>
+        <span
+          aria-hidden
+          className="aura still on-dark clay"
+          style={{ width: 360, height: 360, top: "-80px", left: "-100px" }}
+        />
+        <span
+          aria-hidden
+          className="aura still on-dark sky"
+          style={{ width: 320, height: 320, top: "15%", right: "-80px" }}
+        />
+        <span
+          aria-hidden
+          className="aura still on-dark mustard"
+          style={{ width: 280, height: 280, bottom: "10%", left: "35%" }}
+        />
 
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] mb-3">
-              Navigation
-            </p>
-            <ul className="space-y-2">
-              {["About", "Services", "FAQ", "Cases"].map((l) => (
-                <li key={l}>
-                  <a
-                    href={`#${l.toLowerCase()}`}
-                    className="hover-underline uppercase tracking-[0.12em] text-xs"
+        <footer className="relative section-pad pt-20 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-10">
+            {/* Brand column — logo + contact */}
+            <div className="md:col-span-5 flex flex-col gap-8">
+              <a
+                href="/"
+                aria-label="The Indoor Revamp — home"
+                className="inline-flex items-center gap-4 shrink-0"
+                data-cursor="none"
+              >
+                <Image
+                  src="/logo-mark.png"
+                  alt="The Indoor Revamp"
+                  width={500}
+                  height={500}
+                  className="h-20 w-20 md:h-24 md:w-24 object-contain"
+                />
+                <span
+                  className="font-display text-2xl md:text-3xl leading-[0.95] uppercase tracking-tight max-w-[10ch]"
+                  style={{ color: cream }}
+                >
+                  The <span className="font-swash italic font-light" style={{ color: "var(--clay)" }}>Indoor</span>{" "}
+                  Revamp
+                </span>
+              </a>
+
+              <div className="flex flex-col gap-5 text-sm">
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
+                    style={{ color: creamDim }}
                   >
-                    {l}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] mb-3">
-              Social Media
-            </p>
-            <ul className="space-y-2">
-              {["Telegram", "Instagram", "LinkedIn", "Facebook"].map((l) => (
-                <li key={l}>
+                    Phone
+                  </p>
                   <a
-                    href="#"
-                    className="hover-underline uppercase tracking-[0.12em] text-xs"
+                    href="tel:+910000000000"
+                    className="font-display text-2xl md:text-3xl leading-none hover-underline"
+                    style={{ color: cream }}
                   >
-                    {l}
+                    +0 000 00 00 000
                   </a>
-                </li>
-              ))}
-            </ul>
+                </div>
+
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
+                    style={{ color: creamDim }}
+                  >
+                    E-mail
+                  </p>
+                  <a
+                    href="mailto:hello@theindoorrevamp.com"
+                    className="font-display text-2xl md:text-3xl leading-none hover-underline"
+                    style={{ color: "var(--clay)" }}
+                  >
+                    hello@theindoorrevamp.com
+                  </a>
+                </div>
+
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
+                    style={{ color: creamDim }}
+                  >
+                    Studio
+                  </p>
+                  <p className="text-sm leading-7 max-w-xs" style={{ color: cream }}>
+                    By appointment only.
+                    <br />
+                    Available pan-India for on-site visits.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="md:col-span-3">
+              <p
+                className="text-[10px] uppercase tracking-[0.28em] mb-5"
+                style={{ color: creamDim }}
+              >
+                Navigation
+              </p>
+              <ul className="space-y-3">
+                {[
+                  { l: "About", h: "/about" },
+                  { l: "Services", h: "/services" },
+                  { l: "Case Studies", h: "/case-studies" },
+                  { l: "Journal", h: "/blog" },
+                  { l: "FAQ", h: "/#faq" },
+                ].map((x) => (
+                  <li key={x.l}>
+                    <a
+                      href={x.h}
+                      className="hover-underline uppercase tracking-[0.16em] text-[11px]"
+                      style={{ color: cream }}
+                    >
+                      {x.l}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Social + back to top */}
+            <div className="md:col-span-4 flex flex-col gap-10">
+              <div>
+                <p
+                  className="text-[10px] uppercase tracking-[0.28em] mb-5"
+                  style={{ color: creamDim }}
+                >
+                  Follow Along
+                </p>
+                <ul className="space-y-3">
+                  {socials.map((x) => (
+                    <li key={x.l}>
+                      <a
+                        href={x.h}
+                        className="hover-underline uppercase tracking-[0.16em] text-[11px] inline-flex items-center gap-2 transition-colors duration-300"
+                        style={{ color: `var(${x.tone})` }}
+                      >
+                        <span>{x.l}</span>
+                        <span aria-hidden>↗</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="md:self-end">
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  data-cursor="top"
+                  className="group inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.22em]"
+                  style={{ color: cream }}
+                >
+                  <span className="hover-underline">Back to the top</span>
+                  <span
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-full transition-all duration-500 group-hover:-translate-y-1"
+                    style={{
+                      border: `1px solid var(--clay)`,
+                      color: "var(--clay)",
+                    }}
+                    aria-hidden
+                  >
+                    ↑
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="md:text-right md:self-end">
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              data-cursor="top"
-              className="hover-underline uppercase tracking-[0.18em] text-xs"
+          {/* Oversized closing statement — light gradient that reads on dark cocoa. */}
+          <div className="relative mt-20 md:mt-28">
+            <p
+              className="font-display leading-[0.92] tracking-tight text-[clamp(36px,7vw,108px)] max-w-[14ch] md:max-w-none"
+              style={{
+                background:
+                  "linear-gradient(135deg, #efe1c9 0%, #d8a87b 45%, #c97b54 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
             >
-              Back to the top ↑
-            </button>
+              We don&rsquo;t{" "}
+              <span className="font-swash italic font-light">design</span> homes —
+              <br className="hidden md:block" /> we{" "}
+              <span className="font-swash italic font-light">transform</span>{" "}
+              them.
+            </p>
           </div>
-        </div>
 
-        <div className="mt-14 pt-6 border-t border-[color:var(--line)] flex items-center justify-between text-xs uppercase tracking-[0.18em] text-[color:var(--ink-dim)]">
-          <span>The Indoor Revamp © 2026</span>
-          <a href="#" className="hover-underline">
-            Privacy policy
-          </a>
-          <span>Lorem Ipsum Dolor</span>
-        </div>
+          <div
+            className="mt-10 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em]"
+            style={{ borderTop: `1px solid ${lineDark}`, color: creamDim }}
+          >
+            <span>© 2026 The Indoor Revamp. All rights reserved.</span>
+            <div className="flex items-center gap-6">
+              <a href="/privacy" className="hover-underline" style={{ color: cream }}>
+                Privacy policy
+              </a>
+              <a href="/terms" className="hover-underline" style={{ color: cream }}>
+                Terms
+              </a>
+            </div>
+            <span>Crafted with care · Made in India</span>
+          </div>
+        </footer>
       </div>
     </section>
   );
