@@ -5,6 +5,7 @@ import Image from "next/image";
 import Nav from "./_components/Nav";
 import Cursor from "./_components/Cursor";
 import Media from "./_components/Media";
+import { CASES } from "./_data/cases";
 import {
   motion,
   AnimatePresence,
@@ -421,6 +422,9 @@ function Hero() {
       data-spotlight
       className="relative h-[100svh] min-h-[680px] w-full overflow-hidden"
     >
+      {/* Warm gradient placeholder bg (no photo) — the .hero-ph class
+          already includes a bottom-fade into the page bg so the seam
+          with the next section disappears. */}
       <div className="absolute inset-0 hero-ph" />
       <Nav />
 
@@ -530,7 +534,7 @@ function Cozy() {
         >
           <Media
             label="Lorem ipsum"
-            chip="Studio · 24"
+            chip="02"
             className="aspect-[4/5] md:aspect-auto md:h-[640px]"
           />
         </motion.div>
@@ -855,9 +859,9 @@ function Services() {
     <section id="services" className="relative section-pad overflow-hidden">
       <span aria-hidden className="aura sage" style={{ width: 520, height: 520, top: "8%", left: "-180px" }} />
       <span aria-hidden className="aura blush" style={{ width: 380, height: 380, bottom: "20%", right: "-120px", animationDelay: "-7s" }} />
-      <div className="relative flex items-end justify-between gap-8">
+      <div className="relative">
         <SectionLabel num="02" tone="--sage">Services</SectionLabel>
-        <h2 className="font-display text-right text-[clamp(56px,11vw,180px)] leading-[0.92] tracking-tight uppercase max-w-[10ch]">
+        <h2 className="font-display text-[clamp(56px,11vw,180px)] leading-[0.92] tracking-tight uppercase max-w-[14ch]">
           Our <span className="font-swash italic font-light">Services</span>
         </h2>
       </div>
@@ -1047,76 +1051,6 @@ function FounderNote() {
 /* ============================================================
    CASE STUDIES  — numbered list; each row opens its case
 ============================================================ */
-export const CASES = [
-  {
-    n: "01",
-    title: "Lorem Loft",
-    type: "Residential",
-    year: "2024",
-    location: "Lorem, IN",
-    area: "180 m²",
-    image:
-      "https://images.unsplash.com/photo-1615873968403-89e068629265?w=1600&q=80&auto=format&fit=crop",
-    summary:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
-    body: [
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation.",
-      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit voluptate velit esse.",
-    ],
-    tags: ["Design Project", "Equipment", "Decoration"],
-  },
-  {
-    n: "02",
-    title: "Dolor Studio",
-    type: "Workspace",
-    year: "2024",
-    location: "Ipsum, IN",
-    area: "120 m²",
-    image:
-      "https://images.unsplash.com/photo-1512972972907-6d71529c5e92?w=1600&q=80&auto=format&fit=crop",
-    summary:
-      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.",
-    body: [
-      "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.",
-      "Sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium.",
-    ],
-    tags: ["Design Project", "Decoration"],
-  },
-  {
-    n: "03",
-    title: "Amet Residence",
-    type: "Residential",
-    year: "2023",
-    location: "Dolor, IN",
-    area: "240 m²",
-    image:
-      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1600&q=80&auto=format&fit=crop",
-    summary:
-      "Duis aute irure dolor in reprehenderit voluptate velit esse cillum dolore.",
-    body: [
-      "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
-      "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt.",
-    ],
-    tags: ["Design Project", "Equipment"],
-  },
-  {
-    n: "04",
-    title: "Consectetur Bistro",
-    type: "Hospitality",
-    year: "2023",
-    location: "Amet, IN",
-    area: "95 m²",
-    image:
-      "https://images.unsplash.com/photo-1593696140826-c58b021acf8b?w=1600&q=80&auto=format&fit=crop",
-    summary:
-      "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim.",
-    body: [
-      "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus.",
-      "Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
-    ],
-    tags: ["Hospitality", "Design Project"],
-  },
-];
 
 function CaseRow({ data, index, tone = "--cta", onOpen }) {
   return (
@@ -1282,9 +1216,9 @@ function CaseStudies() {
     <section id="case-studies" className="relative section-pad overflow-hidden">
       <span aria-hidden className="aura mustard" style={{ width: 480, height: 480, top: "5%", right: "-160px" }} />
       <span aria-hidden className="aura clay" style={{ width: 360, height: 360, bottom: "10%", left: "-100px", animationDelay: "-8s" }} />
-      <div className="relative flex items-end justify-between gap-8">
+      <div className="relative">
         <SectionLabel num="04" tone="--mustard">Selected Work</SectionLabel>
-        <h2 className="font-display text-right text-[clamp(44px,9vw,150px)] leading-[0.92] tracking-tight uppercase max-w-[12ch]">
+        <h2 className="font-display text-[clamp(56px,11vw,180px)] leading-[0.92] tracking-tight uppercase max-w-[14ch]">
           Case <span className="font-swash italic font-light text-gradient-warm">Studies</span>
         </h2>
       </div>

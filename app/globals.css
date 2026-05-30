@@ -449,6 +449,29 @@ body {
   backdrop-filter: blur(6px);
 }
 
+/* Shared dark overlay sat on top of any image used as a background.
+   Darker at the top and bottom (where text usually sits) and lighter
+   through the middle so the image still reads. Cards and tiles add it
+   as a pseudo-element of .media-image; the hero applies its own
+   variant inline. */
+.media-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  z-index: 1;
+}
+
+/* Keep the caption / chip overlays above the dark wash. */
+.media-image .ph-chip { z-index: 2; }
+
 /* ---------- Hero gradient placeholder ---------- */
 .hero-ph {
   background:
