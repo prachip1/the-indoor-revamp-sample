@@ -20,6 +20,8 @@ export default function Media({
   label,
   chip,
   image,
+  video,
+  poster,
   className = "",
   rounded = "rounded-2xl",
   expandable = false,
@@ -28,24 +30,37 @@ export default function Media({
 
   const tileChildren = (
     <>
-      {image && (
-        <Image
-          src={image}
-          alt={label || ""}
-          fill
-          sizes="(max-width: 768px) 100vw, 60vw"
-          className="object-cover"
-          priority={false}
+      {video ? (
+        <video
+          src={video}
+          poster={poster}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
+      ) : (
+        image && (
+          <Image
+            src={image}
+            alt={label || ""}
+            fill
+            sizes="(max-width: 768px) 100vw, 60vw"
+            className="object-cover"
+            priority={false}
+          />
+        )
       )}
       {chip ? <span className="ph-chip">{chip}</span> : null}
     </>
   );
 
-  // With a real image: a plain rounded container (no media-ph pseudo
-  // elements painting dots / caption over the photo). Without one:
+  // With a real image or video: a plain rounded container (no media-ph
+  // pseudo elements painting dots / caption over the media). Without one:
   // keep the warm placeholder gradient.
-  const tileClass = image
+  const tileClass = image || video
     ? `media-image relative overflow-hidden ${rounded} ${className} bg-[color:var(--card-3)]`
     : `media-ph ${rounded} ${className} relative overflow-hidden`;
 
@@ -145,7 +160,6 @@ function MediaLightbox({ label, chip, image, onClose }) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.98, opacity: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        onClick={(e) => e.stopPropagation()}
       >
         {image ? (
           <Image

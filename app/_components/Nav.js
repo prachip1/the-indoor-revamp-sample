@@ -11,13 +11,17 @@ import { usePathname } from "next/navigation";
  * is intentionally tight (py-4/5) — the big `.section-pad` vertical inset is
  * meant for page sections, not a header. Active route is underlined.
  */
-export default function Nav() {
+export default function Nav({ tone = "dark" }) {
   const pathname = usePathname() || "/";
+  const light = tone === "light";
+  // On dark backgrounds (e.g. the photo hero) links render cream; the
+  // hover underline uses currentColor so it follows automatically.
+  const linkStyle = light ? { color: "#f3e8d8" } : undefined;
 
   const middleLinks = [
     { l: "About", h: "/about" },
     { l: "Services", h: "/services" },
-    { l: "FAQ", h: "/#faq" },
+    { l: "FAQ", h: "/faq" },
   ];
   const rightLinks = [
     { l: "Cases", h: "/case-studies" },
@@ -50,13 +54,15 @@ export default function Nav() {
           width={500}
           height={500}
           priority
-          className="h-20 w-20 md:h-28 md:w-28 object-contain"
+          className={`h-20 w-20 md:h-28 md:w-28 object-contain ${
+            light ? "drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]" : ""
+          }`}
         />
       </Link>
 
       <div className="hidden md:flex items-center gap-10">
         {middleLinks.map((x) => (
-          <Link key={x.l} className={linkCls(x.h)} href={x.h}>
+          <Link key={x.l} className={linkCls(x.h)} href={x.h} style={linkStyle}>
             {x.l}
           </Link>
         ))}
@@ -64,7 +70,7 @@ export default function Nav() {
 
       <div className="hidden md:flex items-center gap-10">
         {rightLinks.map((x) => (
-          <Link key={x.l} className={linkCls(x.h)} href={x.h}>
+          <Link key={x.l} className={linkCls(x.h)} href={x.h} style={linkStyle}>
             {x.l}
           </Link>
         ))}

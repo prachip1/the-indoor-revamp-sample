@@ -219,10 +219,10 @@ body {
   /* Layered halo — warm tan inner glow on top of a soft slate ring so
      the cursor feels lit, not just printed. */
   box-shadow:
-    0 0 0 1px rgba(251, 245, 236, 0.18),
-    0 0 12px rgba(168, 126, 83, 0.55),
-    0 0 28px rgba(168, 126, 83, 0.3),
-    0 0 18px rgba(63, 78, 79, 0.35);
+    0 0 0 1px rgba(251, 245, 236, 0.22),
+    0 0 18px rgba(168, 126, 83, 0.75),
+    0 0 44px rgba(168, 126, 83, 0.5),
+    0 0 26px rgba(63, 78, 79, 0.4);
   transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
   text-align: center;
   line-height: 1;
@@ -503,6 +503,32 @@ body {
   background: linear-gradient(to bottom, transparent 0%, var(--bg) 88%);
   pointer-events: none;
   z-index: 1;
+}
+
+/* Photo hero: a cinematic dark scrim over the (dark, ornate) background
+   image so the cream hero type, nav and captions stay legible. Darkens
+   the top (for the nav), the bottom (for headline + captions) and the
+   edges (a soft vignette), while leaving the centre of the photo open. */
+.hero-photo-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* top — seat the nav */
+    linear-gradient(
+      to bottom,
+      rgba(22, 17, 12, 0.55) 0%,
+      rgba(22, 17, 12, 0.1) 22%,
+      rgba(22, 17, 12, 0) 40%
+    ),
+    /* bottom — seat the captions */
+    linear-gradient(
+      to top,
+      rgba(22, 17, 12, 0.6) 0%,
+      rgba(22, 17, 12, 0.14) 42%,
+      rgba(22, 17, 12, 0) 72%
+    );
 }
 
 /* ---------- Atmospheric color orbs ----------

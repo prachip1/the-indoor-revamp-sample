@@ -353,37 +353,26 @@ function GlobalSpotlight() {
   }, [mx, my]);
 
   const { scrollY } = useScroll();
-  // Anchor the morph to the moment the "About Us" title crosses into
-  // the upper-middle of the viewport. The About section starts at
-  // scrollY ≈ vh (hero is 100svh) and its h2 sits ~80px inside the
-  // section padding, so the title meets a centered cursor at roughly
-  // scrollY ≈ vh * 0.55. By that point the glow is fully a small circle.
-  const progress = useTransform(scrollY, [0, vh * 0.55], [0, 1], {
+  // Fully present across the hero, then fades out as the hero leaves the
+  // viewport so the dark wash never bleeds onto the next section.
+  const opacity = useTransform(scrollY, [0, vh * 0.55, vh * 0.95], [1, 1, 0]);
+  // Radius (px) of the soft opening that reveals the photo; eases a touch
+  // smaller as you start scrolling.
+  const radius = useTransform(scrollY, [0, vh * 0.6], [140, 120], {
     clamp: true,
   });
-  // Hold the small circle a moment, then fade out before the next
-  // section so it doesn't paint over deeper content.
-  const opacity = useTransform(
-    scrollY,
-    [0, vh * 0.55, vh * 1.05],
-    [1, 1, 0]
-  );
 
-  // Saturated halo at rest → tight, defined circle by the time the
-  // About Us title lines up with the cursor.
-  const sRadius = useTransform(progress, [0, 1], [220, 65]);
-  const sCoreAlpha = useTransform(progress, [0, 1], [0.42, 0.78]);
-  const sCoreStop = useTransform(progress, [0, 1], [0, 82]);
-  const sFadeStop = useTransform(progress, [0, 1], [70, 92]);
-
-  // Same slate color as the "Say Hello" CTA (--cta: #3f4e4f).
-  const spotlight = useMotionTemplate`radial-gradient(${sRadius}px circle at ${smx}% ${smy}%, rgba(63, 78, 79, ${sCoreAlpha}) ${sCoreStop}%, transparent ${sFadeStop}%)`;
+  // A near-opaque dark veil over the whole hero, lifted at the cursor so
+  // the photo shows through, like a torch. The opening carries a warm
+  // brown tint in its centre that deepens into a glow ring, then falls
+  // off into the dark veil that fills out to every screen edge.
+  const torch = useMotionTemplate`radial-gradient(${radius}px circle at ${smx}% ${smy}%, rgba(150, 96, 58, 0.16) 0%, rgba(150, 96, 58, 0.3) 46%, rgba(16, 12, 9, 0.78) 100%)`;
 
   return (
     <motion.div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-[6]"
-      style={{ background: spotlight, opacity }}
+      style={{ background: torch, opacity }}
     />
   );
 }
@@ -422,20 +411,31 @@ function Hero() {
       data-spotlight
       className="relative h-[100svh] min-h-[680px] w-full overflow-hidden"
     >
-      {/* Warm gradient placeholder bg (no photo) — the .hero-ph class
-          already includes a bottom-fade into the page bg so the seam
-          with the next section disappears. */}
-      <div className="absolute inset-0 hero-ph" />
-      <Nav />
+      {/* Background photo + cinematic dark scrim. The photo is dark and
+          ornate, so the hero type, nav and captions render in cream/gold
+          and the scrim darkens the top/bottom/edges to keep them legible. */}
+      <Image
+        src="https://images.unsplash.com/photo-1455593984172-9f753a2e1ebd?w=2400&q=80&auto=format&fit=crop"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div aria-hidden className="hero-photo-scrim" />
+      <Nav tone="light" />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-8 text-center">
-        <h1 className="font-display text-[color:var(--ink)]">
+        <h1 className="font-display text-[#f5ead9] drop-shadow-[0_4px_26px_rgba(0,0,0,0.8)]">
           <MaskRevealMixed
             onMount
             className="block text-[clamp(48px,9vw,148px)]"
             parts={[
               "Lorem ",
-              <span key="n" className="font-swash italic font-light">
+              <span
+                key="n"
+                className="font-swash italic font-light text-[#e6c79c]"
+              >
                 Ipsum
               </span>,
             ]}
@@ -446,7 +446,10 @@ function Hero() {
             onMount
             className="block mt-2 text-[clamp(40px,8vw,128px)]"
             parts={[
-              <span key="amp" className="font-swash italic font-light">
+              <span
+                key="amp"
+                className="font-swash italic font-light text-[#e6c79c]"
+              >
                 Dolor
               </span>,
               " Sit Amet",
@@ -462,14 +465,14 @@ function Hero() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 1.6, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute bottom-10 left-0 right-0 z-10 grid grid-cols-1 md:grid-cols-2 gap-6 section-pad pb-10 text-xs md:text-sm leading-relaxed text-[color:var(--ink)] opacity-85"
+        className="absolute bottom-10 left-0 right-0 z-10 grid grid-cols-1 md:grid-cols-2 gap-6 section-pad pb-10 text-xs md:text-sm leading-relaxed text-[#efe1c9] opacity-90"
       >
         <p className="max-w-xs">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </p>
         <div className="md:justify-self-end flex items-end gap-4">
-          <span className="font-display text-2xl italic text-[color:var(--cta)] opacity-90">§</span>
+          <span className="font-display text-2xl italic text-[#e6c79c] opacity-90">§</span>
           <p className="max-w-xs md:text-right">
             Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
             nisi ut aliquip ex ea commodo consequat.
@@ -494,7 +497,7 @@ function Cozy() {
         About <span className="font-swash italic font-light">Us</span>
       </h2>
 
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-12 gap-10">
+      <div className="mt-16 grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
         <motion.div
           className="md:col-span-5"
           initial={{ x: -60, opacity: 0 }}
@@ -502,18 +505,7 @@ function Cozy() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Media
-            label="Lorem"
-            chip="01"
-            className="aspect-[4/5] max-w-[360px]"
-          />
-          <div className="mt-5 flex items-center justify-between max-w-[360px] text-sm">
-            <span className="font-display text-base">Lorem Ipsum</span>
-            <span className="text-[color:var(--ink-dim)] uppercase tracking-[0.18em] text-xs">
-              Dolor
-            </span>
-          </div>
-          <div className="mt-12 max-w-[420px] space-y-5 text-sm leading-7 text-[color:var(--ink-dim)]">
+          <div className="max-w-[480px] space-y-6 text-base md:text-lg leading-8 text-[color:var(--ink-dim)]">
             <p>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
               eiusmod tempor incididunt ut labore et dolore magna aliqua.
@@ -535,6 +527,7 @@ function Cozy() {
           <Media
             label="Lorem ipsum"
             chip="02"
+            video="https://videos.pexels.com/video-files/3982254/3982254-uhd_2560_1440_30fps.mp4"
             className="aspect-[4/5] md:aspect-auto md:h-[640px]"
           />
         </motion.div>
@@ -549,9 +542,9 @@ function Cozy() {
 ============================================================ */
 function Stats() {
   const rows = [
-    { n: 5, label: "Lorem", tone: "--clay", gradient: "text-gradient-warm" },
-    { n: 12, label: "Ipsum", tone: "--sky", gradient: "text-gradient-cool" },
-    { n: 187, label: "Dolor", tone: "--mustard", gradient: "text-gradient-warm" },
+    { n: 12, label: "Lorem", tone: "--clay", gradient: "text-gradient-warm" },
+    { n: 86, label: "Ipsum", tone: "--sky", gradient: "text-gradient-cool" },
+    { n: 240, label: "Dolor", tone: "--mustard", gradient: "text-gradient-warm" },
   ];
   return (
     <section className="relative section-pad pt-0 overflow-hidden">
@@ -573,7 +566,10 @@ function Stats() {
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
-                <span className={`font-display text-[clamp(72px,12vw,168px)] leading-none ${row.gradient}`}>
+                <span
+                  className="font-display text-[clamp(96px,15vw,220px)] leading-none"
+                  style={{ color: `var(${row.tone})` }}
+                >
                   <Odometer value={row.n} />
                 </span>
                 <span className="text-sm tracking-[0.18em] uppercase text-[color:var(--ink-dim)] pb-3 inline-flex items-center gap-3">
@@ -1418,7 +1414,7 @@ function FooterCTA() {
                   { l: "Services", h: "/services" },
                   { l: "Case Studies", h: "/case-studies" },
                   { l: "Journal", h: "/blog" },
-                  { l: "FAQ", h: "/#faq" },
+                  { l: "FAQ", h: "/faq" },
                 ].map((x) => (
                   <li key={x.l}>
                     <a
@@ -1514,7 +1510,19 @@ function FooterCTA() {
                 Terms
               </a>
             </div>
-            <span>Crafted with care · Made in India</span>
+            <span>
+              Built by{" "}
+              <a
+                href="https://byteyourweb.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover-underline"
+                style={{ color: "var(--clay)" }}
+              >
+                ByteYourWeb
+              </a>{" "}
+              · Made in India
+            </span>
           </div>
         </footer>
       </div>
