@@ -59,10 +59,10 @@ export default function FaqClient() {
 
 function PageHero() {
   return (
-    <section className="relative min-h-[60svh] flex flex-col overflow-hidden">
+    <section className="relative min-h-[88svh] flex flex-col overflow-hidden">
       <div className="absolute inset-0 hero-ph" />
       <Nav />
-      <div className="relative z-10 section-pad flex-1 flex flex-col justify-end pb-16 md:pb-24">
+      <div className="relative z-10 section-pad flex-1 flex flex-col justify-start mt-24 md:mt-32 pb-16 md:pb-24">
         <SectionLabel num="01">FAQ</SectionLabel>
         <h1 className="font-display text-[clamp(64px,13vw,200px)] leading-[0.9] uppercase tracking-tight max-w-[14ch]">
           Questions{" "}

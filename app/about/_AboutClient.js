@@ -26,11 +26,11 @@ export default function AboutClient() {
 
 function PageHero() {
   return (
-    <section className="relative min-h-[80svh] flex flex-col overflow-hidden">
+    <section className="relative min-h-[88svh] flex flex-col overflow-hidden">
       <div className="absolute inset-0 hero-ph" />
       <Nav />
-      <div className="relative z-10 section-pad flex-1 flex flex-col justify-end pb-16 md:pb-24">
-        <SectionLabel num="01">About</SectionLabel>
+      <div className="relative z-10 section-pad flex-1 flex flex-col justify-start mt-24 md:mt-32 pb-16 md:pb-24">
+        {/**<SectionLabel num="01">About</SectionLabel> */}
         <h1 className="font-display text-[clamp(64px,13vw,200px)] leading-[0.9] uppercase tracking-tight max-w-[14ch]">
           Our <span className="font-swash italic font-light">Story</span>
         </h1>
@@ -49,20 +49,7 @@ function Story() {
       <SectionLabel num="02">Our Story</SectionLabel>
       <div className="mt-8 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center">
         <motion.div
-          className="md:col-span-7"
-          initial={{ opacity: 0, x: -40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <Media
-            label="Studio · Est. 2018"
-            chip="01"
-            className="aspect-[5/4] w-full"
-          />
-        </motion.div>
-        <motion.div
-          className="md:col-span-5 space-y-6 text-sm leading-7 text-[color:var(--ink-dim)] max-w-md"
+          className="md:col-span-7 md:col-start-1 space-y-6 text-sm leading-7 text-[color:var(--ink-dim)] max-w-md"
           initial={{ opacity: 0, x: 40 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -74,13 +61,13 @@ function Story() {
             .
           </h2>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua.
+         The Indoor Revamp is a boutique interior design firm dedicated to crafting thoughtful, holistic spaces that reflect each client’s personality,
+lifestyle, and needs. We believe that good design goes beyond aesthetics it’s about creating environments that feel intuitive, functional, and deeply personal.
           </p>
           <p>
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
-            nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-            reprehenderit.
+       With a strong focus on end-to-end service and consistent on-site involvement, we manage every stage of the process from concept
+development and material selection to execution and final styling. Our hands-on approach ensures attention to detail, quality control, and
+seamless coordination, allowing clients to experience a smooth, stress-free journey without having to worry about the complexities of the project.
           </p>
         </motion.div>
       </div>
@@ -160,6 +147,7 @@ function FounderQuote() {
           <Media
             label="Founder portrait"
             chip="Founder"
+            image="/founder.png"
             className="aspect-[4/5] w-full max-w-[420px]"
           />
         </motion.div>
@@ -186,7 +174,7 @@ function FounderQuote() {
             ”
           </span>
           <footer className="mt-8 text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] not-italic">
-            — Lorem Ipsum, Founder &amp; Creative Director
+            — Nidhi Singh Rathore, Founder &amp; Creative Director
           </footer>
         </motion.blockquote>
       </div>

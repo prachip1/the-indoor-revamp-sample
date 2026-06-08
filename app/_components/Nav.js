@@ -54,7 +54,7 @@ export default function Nav({ tone = "dark" }) {
           width={500}
           height={500}
           priority
-          className={`h-20 w-20 md:h-28 md:w-28 object-contain ${
+          className={`h-36 w-36 md:h-44 md:w-44 object-contain ${
             light ? "drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]" : ""
           }`}
         />

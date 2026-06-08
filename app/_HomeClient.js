@@ -2,9 +2,12 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Nav from "./_components/Nav";
 import Cursor from "./_components/Cursor";
 import Media from "./_components/Media";
+import Magnetic from "./_components/Magnetic";
+import ServicePopup from "./_components/ServicePopup";
 import { CASES } from "./_data/cases";
 import {
   motion,
@@ -16,56 +19,8 @@ import {
   useMotionTemplate,
   useVelocity,
   useAnimationFrame,
-  useInView,
-  animate,
   wrap,
 } from "motion/react";
-
-/* ============================================================
-   Magnetic wrapper
-============================================================ */
-function Magnetic({ children, strength = 28, className = "" }) {
-  const ref = useRef(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 250, damping: 18, mass: 0.4 });
-  const sy = useSpring(y, { stiffness: 250, damping: 18, mass: 0.4 });
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onMove = (e) => {
-      const r = el.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2);
-      const dy = e.clientY - (r.top + r.height / 2);
-      const dist = Math.hypot(dx, dy);
-      const max = Math.max(r.width, r.height) * 0.9;
-      if (dist > max * 1.4) {
-        x.set(0);
-        y.set(0);
-        return;
-      }
-      x.set((dx / max) * strength);
-      y.set((dy / max) * strength);
-    };
-    const onLeave = () => {
-      x.set(0);
-      y.set(0);
-    };
-    window.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseleave", onLeave);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseleave", onLeave);
-    };
-  }, [strength, x, y]);
-
-  return (
-    <motion.span ref={ref} style={{ x: sx, y: sy }} className={className}>
-      {children}
-    </motion.span>
-  );
-}
 
 /* ============================================================
    Mask letter reveal — characters rise from a mask, staggered
@@ -195,53 +150,6 @@ function ScrollWordReveal({ children, className = "" }) {
           />
         );
       })}
-    </span>
-  );
-}
-
-/* ============================================================
-   Odometer-style rolling digit
-============================================================ */
-function Digit({ value }) {
-  // value: 0-9
-  return (
-    <span className="digit">
-      <motion.span
-        className="digit-track"
-        animate={{ y: `-${value * 10}%` }}
-        transition={{ type: "spring", stiffness: 90, damping: 18, mass: 0.9 }}
-      >
-        {Array.from({ length: 10 }).map((_, i) => (
-          <span key={i} className="digit-slot">
-            {i}
-          </span>
-        ))}
-      </motion.span>
-    </span>
-  );
-}
-
-function Odometer({ value, className = "" }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, amount: 0.5 });
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return;
-    const controls = animate(0, value, {
-      duration: 2.2,
-      ease: [0.22, 1, 0.36, 1],
-      onUpdate: (v) => setCurrent(Math.floor(v)),
-    });
-    return () => controls.stop();
-  }, [inView, value]);
-
-  const str = String(current);
-  return (
-    <span ref={ref} className={`odometer ${className}`}>
-      {str.split("").map((d, i) => (
-        <Digit key={`${str.length}-${i}`} value={parseInt(d, 10)} />
-      ))}
     </span>
   );
 }
@@ -538,62 +446,16 @@ function Cozy() {
 }
 
 /* ============================================================
-   STATS
+   INTRO STATEMENT — the lede that used to sit beside the stats
 ============================================================ */
-function Stats() {
-  const rows = [
-    { n: 12, label: "Lorem", tone: "--clay", gradient: "text-gradient-warm" },
-    { n: 86, label: "Ipsum", tone: "--sky", gradient: "text-gradient-cool" },
-    { n: 240, label: "Dolor", tone: "--mustard", gradient: "text-gradient-warm" },
-  ];
+function IntroStatement() {
   return (
     <section className="relative section-pad pt-0 overflow-hidden">
       <span aria-hidden className="aura sky" style={{ width: 460, height: 460, top: "10%", right: "-160px", animationDelay: "-3s" }} />
       <span aria-hidden className="aura mustard" style={{ width: 320, height: 320, bottom: "-80px", left: "30%", animationDelay: "-9s" }} />
       <div className="relative grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
-        <div className="md:col-span-7">
-          <div className="space-y-12">
-            {rows.map((row, i) => (
-              <motion.div
-                key={row.label}
-                className="relative grid grid-cols-2 gap-6 items-end pb-6"
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{
-                  duration: 0.9,
-                  delay: i * 0.15,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-              >
-                <span
-                  className="font-display text-[clamp(96px,15vw,220px)] leading-none"
-                  style={{ color: `var(${row.tone})` }}
-                >
-                  <Odometer value={row.n} />
-                </span>
-                <span className="text-sm tracking-[0.18em] uppercase text-[color:var(--ink-dim)] pb-3 inline-flex items-center gap-3">
-                  <span
-                    aria-hidden
-                    className="inline-block h-1.5 w-1.5 rounded-full"
-                    style={{ background: `var(${row.tone})`, boxShadow: `0 0 10px var(${row.tone})` }}
-                  />
-                  {row.label}
-                </span>
-                <span
-                  aria-hidden
-                  className="absolute left-0 bottom-0 h-px w-full"
-                  style={{
-                    background: `linear-gradient(to right, var(${row.tone}), color-mix(in srgb, var(${row.tone}) 30%, transparent) 60%, transparent)`,
-                  }}
-                />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
         <motion.div
-          className="md:col-span-5 md:pl-8 space-y-6"
+          className="md:col-span-7 md:col-start-6 md:pl-8 space-y-6"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -820,37 +682,43 @@ function Services() {
   const rows = [
     {
       n: "01",
-      title: "Lorem",
+      title: "Turkey Projects",
       desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      detail:
+        "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
       cta: "Know More",
-      href: "#service-01",
       tone: "--clay",
     },
     {
       n: "02",
-      title: "Dolor",
+      title: "Landscaping",
       desc: "Ut enim ad minim veniam, quis nostrud exercitation.",
+      detail:
+        "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur, excepteur sint occaecat cupidatat non proident sunt.",
       cta: "Know More",
-      href: "#service-02",
       tone: "--sage",
     },
     {
       n: "03",
-      title: "Sit",
+      title: "3D visualization and 2D drafting",
       desc: "Duis aute irure dolor in reprehenderit voluptate.",
+      detail:
+        "Sunt in culpa qui officia deserunt mollit anim id est laborum, sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
       cta: "Know More",
-      href: "#service-03",
       tone: "--sky",
     },
     {
       n: "04",
-      title: "Amet",
+      title: "Partial Execution Model",
       desc: "Excepteur sint occaecat cupidatat non proident sunt.",
+      detail:
+        "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
       cta: "Know More",
-      href: "#service-04",
       tone: "--mustard",
     },
   ];
+  const [active, setActive] = useState(null);
+
   return (
     <section id="services" className="relative section-pad overflow-hidden">
       <span aria-hidden className="aura sage" style={{ width: 520, height: 520, top: "8%", left: "-180px" }} />
@@ -864,14 +732,23 @@ function Services() {
 
       <div className="relative mt-24 space-y-24 md:space-y-40">
         {rows.map((r, i) => (
-          <ServiceRow key={r.n} {...r} imageRight={i % 2 === 0} />
+          <ServiceRow
+            key={r.n}
+            {...r}
+            imageRight={i % 2 === 0}
+            onOpen={() => setActive(r)}
+          />
         ))}
       </div>
+
+      <AnimatePresence>
+        {active && <ServicePopup data={active} onClose={() => setActive(null)} />}
+      </AnimatePresence>
     </section>
   );
 }
 
-function ServiceRow({ n, title, desc, cta, href, imageRight, tone = "--cta" }) {
+function ServiceRow({ n, title, desc, cta, imageRight, onOpen }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -929,11 +806,11 @@ function ServiceRow({ n, title, desc, cta, href, imageRight, tone = "--cta" }) {
       >
         <span
           className="block text-xs uppercase tracking-[0.28em] tabular-nums"
-          style={{ color: `var(${tone})` }}
+          style={{ color: "var(--sky)" }}
         >
           [ {n} ]
         </span>
-        <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.95] text-[clamp(40px,7.5vw,112px)]">
+        <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.98] text-[clamp(40px,6.5vw,92px)] text-balance break-words">
           {title}
         </h3>
         <p
@@ -946,16 +823,19 @@ function ServiceRow({ n, title, desc, cta, href, imageRight, tone = "--cta" }) {
         <div className={`mt-8 flex ${imageRight ? "justify-start" : "justify-end"}`}>
           {/* Caption-style CTA. data-cursor="none" suppresses the big
               link-mode circle on hover; the text gets the slate color
-              shift + underline as its hover affordance instead. */}
-          <a
-            href={href}
+              shift + underline as its hover affordance instead. Color
+              matches the service numbering (var(--sky)) so the row reads
+              as one consistent accent. */}
+          <button
+            type="button"
+            onClick={onOpen}
             data-cursor="none"
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] transition-colors duration-300 hover-underline"
-            style={{ color: `var(${tone})` }}
+            style={{ color: "var(--sky)" }}
           >
             {cta}
             <span aria-hidden>↗</span>
-          </a>
+          </button>
         </div>
       </motion.div>
     </div>
@@ -992,11 +872,11 @@ function FounderNote() {
           <Media
             label="Founder portrait"
             chip="Founder"
-            image="https://images.unsplash.com/photo-1605884636476-ec4bd6c8d958?w=1200&q=80&auto=format&fit=crop"
+            image="/founder.png"
             className="aspect-[4/5] w-full max-w-[560px]"
           />
           <span className="font-swash italic font-light text-3xl md:text-5xl mt-8 text-[color:var(--ink)]">
-            — Lorem Ipsum
+            — Nidhi Singh Rathore
           </span>
           <span className="text-xs uppercase tracking-[0.22em] text-[color:var(--ink-dim)] mt-3">
             Founder &amp; Creative Director
@@ -1016,23 +896,40 @@ function FounderNote() {
           }}
           style={{ transformOrigin: "left center" }}
         >
-          <blockquote className="relative font-display text-[clamp(22px,2.6vw,40px)] leading-[1.45] italic text-[color:var(--ink)] pl-8 md:pl-12">
+          <blockquote className="relative font-display text-[clamp(14px,1.5vw,18px)] leading-[1.7] italic text-[color:var(--ink)] pl-8 md:pl-12">
             {/* Opening quote is absolutely positioned so its big font
                 size doesn't stretch the first body line. */}
             <span
               aria-hidden
-              className="absolute left-0 -top-3 md:-top-6 font-swash italic font-light text-[clamp(46px,6vw,90px)] leading-none text-[color:var(--accent)] opacity-70 select-none pointer-events-none"
+              className="absolute left-0 -top-3 md:-top-5 font-swash italic font-light text-[clamp(34px,4vw,56px)] leading-none text-[color:var(--accent)] opacity-70 select-none pointer-events-none"
             >
               “
             </span>
             <ScrollWordReveal>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation.
+              Six years in interior design, and I still learn something new every single day. 
+This field has changed enormously — shifting trends, new materials, AI entering the creative 
+process — the way we design spaces today looks nothing like it did even a few years ago. The 
+briefs are more complex, the expectations higher, and the possibilities genuinely exciting. 
+Nothing is simple anymore, and honestly, I love that. 
+But through all the change, one thing has stayed constant for me —the handover day. That final 
+walk-through when a client sees their space fully realised for the first time. The moment the 
+furniture is dressed, the lighting is set, every finish and fixture has found its place — and they 
+just stop. That moment makes every late night, every revised mood board, every difficult 
+decision completely worth it. Nothing compares to it. 
+That feeling is exactly why I do this. 
+Interior design is one of the few investments you make once and live with every single day. It 
+isn't just about making a space look beautiful — it's about making it feel right for you. Your 
+lifestyle, your comfort, your story told through space and material and light. 
+My goal is simple — to earn your trust, understand your vision, and translate it into interiors that 
+you'll fall in love with every time you walk through the door. Dream spaces aren't a luxury. With 
+the right guidance, they're absolutely within reach. 
+Let's build something that's truly yours. 
             </ScrollWordReveal>
             {/* Closing quote inline, scaled relative to body text so the
                 final line stays the same height as the rest. */}
             <span
               aria-hidden
-              className="font-swash italic font-light text-[1.6em] leading-none text-[color:var(--accent)] opacity-70 select-none ml-1 align-middle"
+              className="font-swash italic font-light text-[1.4em] leading-none text-[color:var(--accent)] opacity-70 select-none ml-1 align-middle"
             >
               ”
             </span>
@@ -1128,7 +1025,7 @@ function CaseModal({ data, onClose }) {
       aria-label={data.title}
     >
       <motion.div
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-none rounded-3xl border border-[color:var(--line)] bg-[color:var(--card)]"
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto case-scroll rounded-3xl border border-[color:var(--line)] bg-[color:var(--card)]"
         initial={{ y: 60, opacity: 0, scale: 0.98 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 40, opacity: 0, scale: 0.98 }}
@@ -1165,7 +1062,7 @@ function CaseModal({ data, onClose }) {
               ["Type", data.type],
               ["Year", data.year],
               ["Location", data.location],
-              ["Area", data.area],
+              ["Role", data.role],
             ].map(([k, v]) => (
               <div key={k}>
                 <p className="mb-1 opacity-70">{k}</p>
@@ -1174,10 +1071,29 @@ function CaseModal({ data, onClose }) {
             ))}
           </div>
 
-          <div className="mt-7 space-y-5 text-sm leading-7 text-[color:var(--ink-dim)] max-w-prose">
-            {data.body.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
+          <div className="mt-7 space-y-6 max-w-prose">
+            {[
+              ["About", data.about],
+              ["The Client", data.client],
+              ["Scope", data.scope],
+              ["Design Aesthetic", data.design_aesthetic],
+            ]
+              .filter(([, v]) => (Array.isArray(v) ? v.length : Boolean(v)))
+              .map(([label, v]) => (
+                <div
+                  key={label}
+                  className="border-t border-[color:var(--line)] pt-4"
+                >
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[color:var(--ink-dim)] opacity-70">
+                    {label}
+                  </p>
+                  <div className="space-y-3 text-sm leading-7 text-[color:var(--ink-dim)]">
+                    {(Array.isArray(v) ? v : [v]).map((p, i) => (
+                      <p key={i}>{p}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
           </div>
 
           <div className="mt-7 flex flex-wrap gap-3">
@@ -1327,12 +1243,12 @@ function FooterCTA() {
 
         <footer className="relative section-pad pt-20 pb-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-10">
-            {/* Brand column — logo + contact */}
-            <div className="md:col-span-5 flex flex-col gap-8">
+            {/* Brand column — logo + name */}
+            <div className="md:col-span-3 flex flex-col gap-6">
               <a
                 href="/"
                 aria-label="The Indoor Revamp — home"
-                className="inline-flex items-center gap-4 shrink-0"
+                className="inline-flex flex-col items-start gap-5 shrink-0"
                 data-cursor="none"
               >
                 <Image
@@ -1340,7 +1256,7 @@ function FooterCTA() {
                   alt="The Indoor Revamp"
                   width={500}
                   height={500}
-                  className="h-20 w-20 md:h-24 md:w-24 object-contain"
+                  className="h-40 w-40 md:h-48 md:w-48 object-contain -mt-2"
                 />
                 <span
                   className="font-display text-2xl md:text-3xl leading-[0.95] uppercase tracking-tight max-w-[10ch]"
@@ -1350,53 +1266,40 @@ function FooterCTA() {
                   Revamp
                 </span>
               </a>
+            </div>
 
-              <div className="flex flex-col gap-5 text-sm">
-                <div>
-                  <p
-                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
-                    style={{ color: creamDim }}
-                  >
-                    Phone
-                  </p>
-                  <a
-                    href="tel:+910000000000"
-                    className="font-display text-2xl md:text-3xl leading-none hover-underline"
-                    style={{ color: cream }}
-                  >
-                    +0 000 00 00 000
-                  </a>
-                </div>
+            {/* Contact column — phone + email */}
+            <div className="md:col-span-3 flex flex-col gap-6 text-sm md:pt-2">
+              <div>
+                <p
+                  className="text-[10px] uppercase tracking-[0.28em] mb-2"
+                  style={{ color: creamDim }}
+                >
+                  Phone
+                </p>
+                <a
+                  href="tel:+917416756969"
+                  className="font-display text-lg md:text-xl leading-none hover-underline"
+                  style={{ color: cream }}
+                >
+                  +91 74167 56969
+                </a>
+              </div>
 
-                <div>
-                  <p
-                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
-                    style={{ color: creamDim }}
-                  >
-                    E-mail
-                  </p>
-                  <a
-                    href="mailto:hello@theindoorrevamp.com"
-                    className="font-display text-2xl md:text-3xl leading-none hover-underline"
-                    style={{ color: "var(--clay)" }}
-                  >
-                    hello@theindoorrevamp.com
-                  </a>
-                </div>
-
-                <div>
-                  <p
-                    className="text-[10px] uppercase tracking-[0.28em] mb-2"
-                    style={{ color: creamDim }}
-                  >
-                    Studio
-                  </p>
-                  <p className="text-sm leading-7 max-w-xs" style={{ color: cream }}>
-                    By appointment only.
-                    <br />
-                    Available pan-India for on-site visits.
-                  </p>
-                </div>
+              <div>
+                <p
+                  className="text-[10px] uppercase tracking-[0.28em] mb-2"
+                  style={{ color: creamDim }}
+                >
+                  E-mail
+                </p>
+                <a
+                  href="mailto:theindoorrevamp@gmail.com"
+                  className="font-display text-lg md:text-xl leading-none hover-underline break-all"
+                  style={{ color: "var(--clay)" }}
+                >
+                  theindoorrevamp@gmail.com
+                </a>
               </div>
             </div>
 
@@ -1430,7 +1333,7 @@ function FooterCTA() {
             </div>
 
             {/* Social + back to top */}
-            <div className="md:col-span-4 flex flex-col gap-10">
+            <div className="md:col-span-3 flex flex-col gap-10">
               <div>
                 <p
                   className="text-[10px] uppercase tracking-[0.28em] mb-5"
@@ -1498,10 +1401,11 @@ function FooterCTA() {
           </div>
 
           <div
-            className="mt-10 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em]"
+            className="mt-10 pt-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between gap-x-8 gap-y-3 text-[10px] uppercase tracking-[0.22em]"
             style={{ borderTop: `1px solid ${lineDark}`, color: creamDim }}
           >
             <span>© 2026 The Indoor Revamp. All rights reserved.</span>
+            <span>By appointment only · Available pan-India for on-site visits</span>
             <div className="flex items-center gap-6">
               <a href="/privacy" className="hover-underline" style={{ color: cream }}>
                 Privacy policy
@@ -1520,8 +1424,7 @@ function FooterCTA() {
                 style={{ color: "var(--clay)" }}
               >
                 ByteYourWeb
-              </a>{" "}
-              · Made in India
+              </a>
             </span>
           </div>
         </footer>
@@ -1542,7 +1445,7 @@ export default function Home() {
         <div className="card-shell relative">
           <Hero />
           <Cozy />
-          <Stats />
+          <IntroStatement />
           <Services />
           <FounderNote />
           <CaseStudies />
