@@ -1,44 +1,54 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import Cursor from "../_components/Cursor";
 import Nav from "../_components/Nav";
 import SectionLabel from "../_components/SectionLabel";
 import Media from "../_components/Media";
+import ServicePopup from "../_components/ServicePopup";
 
 const SERVICES = [
   {
     n: "01",
-    title: "Lorem",
+    title: "Turkey Projects",
     desc:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.",
+    detail:
+      "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua, ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     cta: "Know More",
-    href: "#service-01",
+    tone: "--clay",
   },
   {
     n: "02",
-    title: "Dolor",
+    title: "Landscaping",
     desc:
       "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+    detail:
+      "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur, excepteur sint occaecat cupidatat non proident sunt.",
     cta: "Know More",
-    href: "#service-02",
+    tone: "--sage",
   },
   {
     n: "03",
-    title: "Sit",
+    title: "3D visualization and 2D Drafting",
     desc:
       "Duis aute irure dolor in reprehenderit voluptate velit esse cillum.",
+    detail:
+      "Sunt in culpa qui officia deserunt mollit anim id est laborum, sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
     cta: "Know More",
-    href: "#service-03",
+    tone: "--sky",
   },
   {
     n: "04",
     title: "Amet",
     desc:
       "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia.",
+    detail:
+      "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.",
     cta: "Know More",
-    href: "#service-04",
+    tone: "--mustard",
   },
 ];
 
@@ -78,10 +88,10 @@ export default function ServicesClient() {
 
 function PageHero() {
   return (
-    <section className="relative min-h-[80svh] flex flex-col overflow-hidden">
+    <section className="relative min-h-[88svh] flex flex-col overflow-hidden">
       <div className="absolute inset-0 hero-ph" />
       <Nav />
-      <div className="relative z-10 section-pad flex-1 flex flex-col justify-end pb-16 md:pb-24">
+      <div className="relative z-10 section-pad flex-1 flex flex-col justify-start mt-24 md:mt-32 pb-16 md:pb-24">
         <SectionLabel num="01">Services</SectionLabel>
         <h1 className="font-display text-[clamp(64px,13vw,200px)] leading-[0.9] uppercase tracking-tight max-w-[14ch]">
           What We <span className="font-swash italic font-light">Do</span>
@@ -96,19 +106,30 @@ function PageHero() {
 }
 
 function ServiceList() {
+  const [active, setActive] = useState(null);
+
   return (
     <section className="section-pad">
       <SectionLabel num="02">Offerings</SectionLabel>
       <div className="mt-12 space-y-20 md:space-y-32">
         {SERVICES.map((s, i) => (
-          <ServiceRow key={s.n} {...s} imageRight={i % 2 === 0} />
+          <ServiceRow
+            key={s.n}
+            {...s}
+            imageRight={i % 2 === 0}
+            onOpen={() => setActive(s)}
+          />
         ))}
       </div>
+
+      <AnimatePresence>
+        {active && <ServicePopup data={active} onClose={() => setActive(null)} />}
+      </AnimatePresence>
     </section>
   );
 }
 
-function ServiceRow({ n, title, desc, cta, href, imageRight }) {
+function ServiceRow({ n, title, desc, cta, imageRight, onOpen }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 60 }}
@@ -138,7 +159,7 @@ function ServiceRow({ n, title, desc, cta, href, imageRight }) {
         <span className="block text-xs uppercase tracking-[0.28em] text-[color:var(--ink-dim)] tabular-nums">
           [ {n} ]
         </span>
-        <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.95] text-[clamp(40px,7.5vw,112px)]">
+        <h3 className="mt-4 font-display uppercase tracking-tight leading-[0.98] text-[clamp(40px,6.5vw,92px)] text-balance break-words">
           {title}
         </h3>
         <p
@@ -153,13 +174,15 @@ function ServiceRow({ n, title, desc, cta, href, imageRight }) {
             imageRight ? "justify-start" : "justify-end"
           }`}
         >
-          <a
-            href={href}
+          <button
+            type="button"
+            onClick={onOpen}
             data-cursor="none"
-            className="inline-block text-xs uppercase tracking-[0.22em] text-[color:var(--cta)] transition-colors duration-300 hover:text-[color:var(--cta-hover)] hover-underline"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-[color:var(--cta)] transition-colors duration-300 hover:text-[color:var(--cta-hover)] hover-underline"
           >
             {cta}
-          </a>
+            <span aria-hidden>↗</span>
+          </button>
         </div>
       </div>
     </motion.div>

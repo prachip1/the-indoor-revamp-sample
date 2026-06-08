@@ -113,6 +113,11 @@ function DeckSection() {
   return (
     <section
       ref={sectionRef}
+      onClick={() => {
+        // Once the deck is spread, a click on empty space restacks it.
+        // Card clicks call stopPropagation so they open the case instead.
+        if (thrown && !selected) setThrown(false);
+      }}
       className="relative min-h-[110svh] overflow-hidden flex items-center py-16 md:py-24"
     >
       <div className="w-full flex flex-row items-center justify-between gap-8 section-pad">
@@ -171,7 +176,10 @@ function DeckSection() {
               <motion.button
                 key={card.n}
                 type="button"
-                onClick={() => handleCardClick(card)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCardClick(card);
+                }}
                 aria-label={
                   thrown
                     ? `Open ${card.title} case study`
@@ -257,7 +265,6 @@ function DeckSection() {
                   </p>
                   <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.22em] text-[#efe1c9]/70 pt-1">
                     <span>{card.location}</span>
-                    <span>{card.area}</span>
                     <span>{card.year}</span>
                   </div>
                 </div>
@@ -502,7 +509,7 @@ function CaseDetailModal({ data, onClose }) {
               />
             </div>
 
-            <div className="relative w-full md:w-[58%] h-full overflow-y-auto scrollbar-none p-6 md:p-9">
+            <div className="relative w-full md:w-[58%] h-full overflow-y-auto case-scroll p-6 md:p-9">
               <span className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--ink-dim)]">
                 [ {data.n} ] — Case Study
               </span>
@@ -518,22 +525,41 @@ function CaseDetailModal({ data, onClose }) {
                   ["Type", data.type],
                   ["Year", data.year],
                   ["Location", data.location],
-                  ["Area", data.area],
+                  ["Role", data.role],
                 ].map(([k, v]) => (
                   <div key={k}>
                     <p className="mb-1 opacity-70">{k}</p>
-                    <p className="text-[color:var(--ink)] tracking-[0.08em]">{v}</p>
+                    <p className="text-[color:var(--ink)] tracking-[0.08em] normal-case">{v}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 space-y-4 text-sm leading-7 text-[color:var(--ink-dim)]">
-                {data.body.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
+              <div className="mt-6 space-y-6">
+                {[
+                  ["About", data.about],
+                  ["The Client", data.client],
+                  ["Scope", data.scope],
+                  ["Design Aesthetic", data.design_aesthetic],
+                ]
+                  .filter(([, v]) => (Array.isArray(v) ? v.length : Boolean(v)))
+                  .map(([label, v]) => (
+                    <div
+                      key={label}
+                      className="border-t border-[color:var(--line)] pt-4"
+                    >
+                      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[color:var(--ink-dim)] opacity-70">
+                        {label}
+                      </p>
+                      <div className="space-y-3 text-sm leading-7 text-[color:var(--ink-dim)]">
+                        {(Array.isArray(v) ? v : [v]).map((p, i) => (
+                          <p key={i}>{p}</p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2.5">
+              <div className="mt-6 flex flex-wrap gap-2.5">
                 {data.tags.map((t, i) => (
                   <span
                     key={t}

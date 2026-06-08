@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+import fs from "fs";
+fs.mkdirSync("__shots", { recursive: true });
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+await page.goto("http://localhost:3001/", { waitUntil: "networkidle" });
+await page.waitForSelector("nav img[alt='The Indoor Revamp']");
+await page.screenshot({ path: "__shots/nav.png", clip: { x: 0, y: 0, width: 700, height: 220 } });
+await page.locator("footer a[aria-label='The Indoor Revamp — home']").scrollIntoViewIfNeeded();
+await page.waitForTimeout(400);
+await page.screenshot({ path: "__shots/footer.png", clip: {x:0,y: await page.locator("footer a[aria-label='The Indoor Revamp — home']").evaluate(el=>el.getBoundingClientRect().top+window.scrollY-40), width: 700, height: 220} });
+await browser.close();
